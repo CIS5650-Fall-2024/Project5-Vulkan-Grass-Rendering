@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <stdexcept>
 #include <vulkan/vulkan.h>
 #include "QueueFlags.h"
 #include "SwapChain.h"

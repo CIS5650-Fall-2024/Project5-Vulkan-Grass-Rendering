@@ -11,7 +11,7 @@ const bool ENABLE_VALIDATION = true;
 
 namespace {
     const std::vector<const char*> validationLayers = {
-        "VK_LAYER_LUNARG_standard_validation"
+        "VK_LAYER_KHRONOS_validation"
     };
 
     // Get the required list of extensions based on whether validation layers are enabled
