@@ -48,7 +48,7 @@ Once you have done this, you need to make sure your GPU driver supports Vulkan. 
 [Vulkan driver](https://developer.nvidia.com/vulkan-driver) from NVIDIA's website.
 
 Finally, to check that Vulkan is ready for use, go to your Vulkan SDK directory (`C:/VulkanSDK/` unless otherwise specified)
-and run the `cube.exe` example within the `Bin` directory. IF you see a rotating gray cube with the LunarG logo, then you
+and run the `vkcube.exe` example within the `Bin` directory. IF you see a rotating gray cube with the LunarG logo, then you
 are all set!
 
 ### Running the code
