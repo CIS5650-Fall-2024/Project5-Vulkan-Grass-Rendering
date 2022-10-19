@@ -1,6 +1,6 @@
 # Instructions - Vulkan Grass Rendering
 
-This is due **Saturday 10/31 at 11:59pm**.
+This is due **Sunday 10/30 at 11:59pm**.
 
 **QUICK NOTE**: Please use `git clone --recursive` when cloning this repo as there are submodules which need to be cloned as well.
 
@@ -185,7 +185,7 @@ The generated vertices will be passed to the tessellation evaluation shader, whe
 
 ** Extra Credit**: Tessellate to varying levels of detail as a function of how far the grass blade is from the camera. For example, if the blade is very far, only generate four vertices in the tessellation control shader.
 
-To build more intuition on how tessellation works, I highly recommend playing with the [helloTessellation sample](https://github.com/CIS565-Fall-2018/Vulkan-Samples/tree/master/samples/5_helloTessellation) and reading this [tutorial on tessellation](http://in2gpu.com/2014/07/12/tessellation-tutorial-opengl-4-3/).
+To build more intuition on how tessellation works, I highly recommend playing with the [helloTessellation sample](https://github.com/CIS565-Fall-2017/Vulkan-Samples/tree/master/samples/5_helloTessellation) and reading this [tutorial on tessellation](https://ogldev.org/www/tutorial30/tutorial30.html).
 
 ## Resources
 
@@ -194,11 +194,11 @@ To build more intuition on how tessellation works, I highly recommend playing wi
 The following resources may be useful for this project.
 
 * [Responsive Real-Time Grass Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf)
-* [CIS565 Vulkan samples](https://github.com/CIS565-Fall-2018/Vulkan-Samples)
+* [CIS565 Vulkan samples](https://github.com/CIS565-Fall-2017/Vulkan-Samples/tree/master/samples/5_helloTessellation)
 * [Official Vulkan documentation](https://www.khronos.org/registry/vulkan/)
 * [Vulkan tutorial](https://vulkan-tutorial.com/)
 * [RenderDoc blog on Vulkan](https://renderdoc.org/vulkan-in-30-minutes.html)
-* [Tessellation tutorial](http://in2gpu.com/2014/07/12/tessellation-tutorial-opengl-4-3/)
+* [Tessellation tutorial](https://ogldev.org/www/tutorial30/tutorial30.html)
 
 
 ## Third-Party Code Policy
