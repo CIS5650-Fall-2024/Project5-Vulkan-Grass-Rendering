@@ -147,8 +147,6 @@ int main() {
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
-
-        break;
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());

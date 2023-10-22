@@ -64,7 +64,7 @@ void main() {
     const vec3 n = normalize(cross(t0, t1));
 #endif
 
-    const float t = tTriangleTip(u, v);
+    const float t = tParabola(u, v);
     const vec3 pos = (1.f - t) * c0 + t * c1;
 
     gl_Position = camera.proj * camera.view * vec4(pos, 1.0);

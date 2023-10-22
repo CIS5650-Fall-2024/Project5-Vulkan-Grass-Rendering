@@ -12,8 +12,14 @@ layout(location = 2) in vec2 fs_uv;
 
 layout(location = 0) out vec4 outColor;
 
-void main() {
-    // TODO: Compute fragment color
+const vec3 grassAlbedoOuter = vec3(0.0745, 0.4275, 0.0824);
+const vec3 grassAlbedoInner = vec3(0.2549, 0.5961, 0.0392);
 
-    outColor = vec4(fs_uv, 0.f, 1.f);
+void main() {
+    // TODO: lambert
+
+    vec3 grassAlbedo = mix(grassAlbedoInner, grassAlbedoOuter, abs(fs_uv.x - 0.5) * 2);
+    grassAlbedo *= mix(0.5, 1.0, smoothstep(-0.1, 0.6, fs_uv.y));
+
+    outColor = vec4(grassAlbedo, 1.f);
 }
