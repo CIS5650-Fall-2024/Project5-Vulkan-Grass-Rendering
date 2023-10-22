@@ -752,8 +752,7 @@ void Renderer::CreateComputePipeline() {
     computeShaderStageInfo.module = computeShaderModule;
     computeShaderStageInfo.pName = "main";
 
-    // TODO: Add the compute dsecriptor set layout you create to this list
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { cameraDescriptorSetLayout, timeDescriptorSetLayout };
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { cameraDescriptorSetLayout, timeDescriptorSetLayout, computeDescriptorSetLayout };
 
     // Create pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -1010,7 +1009,7 @@ void Renderer::RecordCommandBuffers() {
 
         for (uint32_t j = 0; j < scene->GetBlades().size(); ++j) {
             //VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetCulledBladesBuffer() };
-            VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetBladesBuffer() }; // TODO switch back to CulledBladesBuffer once compute shader is set up
+            VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetBladesBuffer() }; // TODO: switch back to CulledBladesBuffer once compute shader is set up
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
