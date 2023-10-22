@@ -29,7 +29,7 @@ void main() {
     tes_v2[gl_InvocationID] = tcs_v2[gl_InvocationID];
     tes_up[gl_InvocationID] = tcs_up[gl_InvocationID];
 
-    float tessLevel = 2;
+    float tessLevel = 4;
     gl_TessLevelInner[0] = tessLevel;
     gl_TessLevelInner[1] = tessLevel;
     gl_TessLevelOuter[0] = tessLevel;
