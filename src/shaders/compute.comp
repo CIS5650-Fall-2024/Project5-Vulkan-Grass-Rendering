@@ -30,7 +30,7 @@ layout(set = 2, binding = 1) buffer CulledBlades {
 };
 
 layout(set = 2, binding = 2) buffer NumBlades {
-    uint vertexCount;   // num blades remaining
+    uint vertexCount;   // accumulate num blades remaining
     uint instanceCount; // = 1
     uint firstVertex;   // = 0
     uint firstInstance; // = 0
