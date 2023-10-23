@@ -1,6 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define PI_OVER_FOUR 0.785398163f
+
 #define WORKGROUP_SIZE 32
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -40,6 +42,8 @@ bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+const vec3 gE = vec3(0, -3, 0);
+
 void main() {
     const uint bladeIdx = gl_GlobalInvocationID.x;
     
@@ -48,13 +52,59 @@ void main() {
     }
     barrier();
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    // -------------------------
+    // APPLY FORCES
+    // -------------------------
+    Blade thisBlade = blades[bladeIdx];
 
-    // TODO: Cull blades that are too far away or not in the camera frustum and write the remaining blades
-    // to the culled blades buffer
+    vec3 v0 = thisBlade.v0.xyz;
+    vec3 v1 = thisBlade.v1.xyz;
+    vec3 v2 = thisBlade.v2.xyz;
+    const vec3 up = thisBlade.up.xyz;
 
-    // early exit here if blade is culled
+    const float theta = thisBlade.v0.w;
+    const float h = thisBlade.v1.w;
+    const float stiffness = thisBlade.up.w;
 
-    uint culledIdx = atomicAdd(numBlades.vertexCount, 1);
-    culledBlades[culledIdx] = blades[bladeIdx];
+    // recovery
+    vec3 Iv2 = v0 + h * up;
+    vec3 Fr = (Iv2 - v2) * stiffness;
+
+    // gravity
+    vec3 f = vec3(cos(theta + PI_OVER_FOUR), 0, sin(theta + PI_OVER_FOUR));
+    vec3 gF = 0.25 * length(gE) * f;
+    vec3 Fg = gE + gF;
+
+    // wind
+    vec3 Fw = vec3(-5 * sin(totalTime), 0, 0); // TODO
+
+    vec3 delta = (Fr + Fg + Fw) * deltaTime;
+
+    v2 += delta;
+    v2 = v2 - up * min(up * (v2 - v0), 0);
+    float lProj = length(v2 - v0 - up * dot(v2 - v0, up));
+    v1 = v0 + h * up * max(1 - lProj / h, 0.05 * max(lProj / h, 1));
+
+    float L0 = distance(v0, v2);
+    float L1 = distance(v0, v1) + distance(v1, v2);
+    // int n = 3;
+    // float L = (2 * L0 + (n - 1) * L1) / (n + 1);
+    float L = (L0 + L1) * 0.5;
+
+    float r = h / L;
+    vec3 v1_corr = v0 + r * (v1 - v0);
+    vec3 v2_corr = v1_corr + r * (v2 - v1);
+
+    thisBlade.v1.xyz = v1_corr.xyz;
+    thisBlade.v2.xyz = v2_corr.xyz;
+    blades[bladeIdx] = thisBlade;
+
+    // -------------------------
+    // CULLING
+    // -------------------------
+
+    // TODO: early exit here if blade is culled
+
+    const uint culledIdx = atomicAdd(numBlades.vertexCount, 1);
+    culledBlades[culledIdx] = thisBlade;
 }
