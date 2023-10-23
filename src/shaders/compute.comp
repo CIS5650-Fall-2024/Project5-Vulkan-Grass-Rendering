@@ -15,16 +15,19 @@ const vec3 gE = vec3(0, -3, 0);
 const vec3 windNoiseMoveDirection = normalize(vec3(2, 0.2, 1)) * 0.7;
 
 #define DO_CULLING 1
-#define DO_ORIENTATION_CULLING 1
-#define DO_FRUSTUM_CULLING 1
-#define DO_DISTANCE_CULLING 0
+#define DO_ORIENTATION_CULLING 0
+#define DO_FRUSTUM_CULLING 0
+#define DO_DISTANCE_CULLING 1
 
 #define ORIENTATION_CULLING_THRESHOLD 0.9
 #define FRUSTUM_CULLING_TOLERANCE 0.2
+#define DISTANCE_CULLING_DIST_MAX 60
+#define DISTANCE_CULLING_NUM_BUCKETS 8
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 layout(set = 1, binding = 0) uniform Time {
@@ -103,9 +106,6 @@ void main() {
     }
     barrier();
 
-    // -------------------------
-    // APPLY FORCES
-    // -------------------------
     Blade thisBlade = blades[bladeIdx];
 
     vec3 v0 = thisBlade.v0.xyz;
@@ -116,6 +116,10 @@ void main() {
     const float theta = thisBlade.v0.w;
     const float h = thisBlade.v1.w;
     const float stiffness = thisBlade.up.w;
+
+    // -------------------------
+    // FORCES
+    // -------------------------
 
 #if APPLY_RECOVERY
     vec3 Iv2 = v0 + h * up;
@@ -186,7 +190,15 @@ void main() {
 #endif
 
 #if DO_DISTANCE_CULLING
-    // TODO
+    const vec3 c = camera.invView[3].xyz;
+    float d_proj = length(v0 - c - up * dot(v0 - c, up));
+
+    float d_max = DISTANCE_CULLING_DIST_MAX;
+    int n = DISTANCE_CULLING_NUM_BUCKETS;
+
+    if (bladeIdx % n > floor(n * (1 - d_proj / d_max))) {
+        return;
+    }
 #endif
 #endif
 

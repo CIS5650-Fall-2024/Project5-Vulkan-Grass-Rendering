@@ -6,6 +6,7 @@ layout(quads, equal_spacing, ccw) in;
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 layout(location = 0) in vec4 tes_v1[];
