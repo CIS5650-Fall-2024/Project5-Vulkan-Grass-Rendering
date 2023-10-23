@@ -42,7 +42,40 @@ bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+vec4 random4(vec4 p) {
+    return fract(sin(vec4(dot(p, vec4(127.1, 311.7, 921.5, 465.8)),
+                          dot(p, vec4(269.5, 183.3, 752.4, 429.1)),
+                          dot(p, vec4(420.6, 631.2, 294.3, 910.8)),
+                          dot(p, vec4(213.7, 808.1, 126.8, 572.0))
+                    )) * 43758.5453);
+}
+
+float surflet(vec4 p, vec4 gridPoint) {
+    vec4 t2 = abs(p - gridPoint);
+    vec4 t = vec4(1.f) - 6.f * pow(t2, vec4(5.f)) + 15.f * pow(t2, vec4(4.f)) - 10.f * pow(t2, vec4(3.f));
+    vec4 gradient = random4(gridPoint) * 2 - vec4(1);
+    vec4 diff = p - gridPoint;
+    float height = dot(diff, gradient);
+    return height * t.x * t.y * t.z * t.w;
+}
+
+float perlin(vec4 p) {
+    float surfletSum = 0.f;
+    for (int dx = 0; dx <= 1; ++dx) {
+        for (int dy = 0; dy <= 1; ++dy) {
+            for (int dz = 0; dz <= 1; ++dz) {
+                for (int dw = 0; dw <= 1; ++dw) {
+                    surfletSum += surflet(p, floor(p) + vec4(dx, dy, dz, dw));
+                }
+            }
+        }
+    }
+    return surfletSum;
+}
+
 const vec3 gE = vec3(0, -3, 0);
+
+const vec3 windNoiseMoveDirection = normalize(vec3(2, 0.2, 1)) * 0.7;
 
 void main() {
     const uint bladeIdx = gl_GlobalInvocationID.x;
@@ -76,7 +109,11 @@ void main() {
     vec3 Fg = gE + gF;
 
     // wind
-    vec3 Fw = vec3(-5 * sin(totalTime), 0, 0); // TODO
+    vec3 Fw = vec3(
+        perlin(vec4(v2 * 0.4 + windNoiseMoveDirection * totalTime, totalTime * 0.3)), 
+        0, 
+        perlin(vec4((v2 * 0.4 + vec3(493.12, 210.03, 974.54)) + windNoiseMoveDirection * totalTime, totalTime * 0.3))
+    ) * 10;
 
     vec3 delta = (Fr + Fg + Fw) * deltaTime;
 
