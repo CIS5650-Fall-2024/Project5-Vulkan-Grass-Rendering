@@ -21,13 +21,19 @@ This README contains details about the specific features implemented, as well as
 
 ![](img/renders/grass_no_forces.png)
 
+Using tessellation shaders, we can procedurally generate spline geometry for each grass blade. The paper offers multiple different ways to parametrize each blade's width; I opted for the parabola method to create varied but sharp shapes.
+
 ### Physical force simulation
 
 ![](img/renders/grass_wavy.gif)
 
+Three forces affect the grass: recovery, gravity, and wind. Recovery pushes each blade's tip back to its original position with strength proportional to the distance between the two positions. Gravity is self-explanatory. Wind is implemented as an arbitrary force calculated using Perlin noise to create a wavy carpet-like effect.
+
 ### Culling
 
 ![](img/renders/grass_culling.gif)
+
+To increase rendering performance, blades are culled by three tests. The first is that if a blade is parallel or close to parallel to the camera's view direction, it will be culled since it would barely show up anyway. The second is that blades outside the view frustum are culled since they wouldn't be visible at all regarldess. The third is that blades are culled with probability increasing as their distance from the camera decreases, as detail is less necessary in farther parts of the scene.
 
 ## Performance Analysis
 
