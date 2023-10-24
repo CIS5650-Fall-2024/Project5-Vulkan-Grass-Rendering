@@ -60,7 +60,7 @@ ELSE(WIN32)
     link_libraries(${XCB_LIBRARIES} ${VULKAN_LIB})
 ENDIF(WIN32)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 add_subdirectory(external)
 add_subdirectory(src)

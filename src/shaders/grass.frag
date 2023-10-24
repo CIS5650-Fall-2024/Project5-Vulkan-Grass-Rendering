@@ -8,6 +8,8 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
 
 // TODO: Declare fragment shader inputs
 
+layout(location = 0) in vec3 position;
+
 layout(location = 0) out vec4 outColor;
 
 void main() {

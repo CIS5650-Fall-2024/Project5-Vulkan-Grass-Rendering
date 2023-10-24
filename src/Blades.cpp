@@ -6,7 +6,9 @@ float generateRandomFloat() {
     return rand() / (float)RAND_MAX;
 }
 
-Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) : Model(device, commandPool, {}, {}) {
+Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) 
+    : Model(device, commandPool, {}, {}) 
+{
     std::vector<Blade> blades;
     blades.reserve(NUM_BLADES);
 
