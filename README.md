@@ -37,6 +37,14 @@ To increase rendering performance, blades are culled by three tests. The first i
 
 ## Performance Analysis
 
+For analysis, I used this camera angle:
+
+![](img/renders/grass_closeup.png)
+
+This allows all three culling methods to take effect as some blades are parallel to the camera, some blades are outside the frustum, and some blades are farther away than others.
+
 ### Number of blades
+
+
 
 ### Culling

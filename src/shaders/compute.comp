@@ -15,8 +15,8 @@ const vec3 gE = vec3(0, -3, 0);
 const vec3 windNoiseMoveDirection = normalize(vec3(2, 0.2, 1)) * 0.7;
 
 #define DO_CULLING 1
-#define DO_ORIENTATION_CULLING 0
-#define DO_FRUSTUM_CULLING 0
+#define DO_ORIENTATION_CULLING 1
+#define DO_FRUSTUM_CULLING 1
 #define DO_DISTANCE_CULLING 1
 
 #define ORIENTATION_CULLING_THRESHOLD 0.9
