@@ -43,11 +43,11 @@ struct Blade {
 };
 
 layout(set = 2, binding = 0) buffer Blades {
-	  Blade blades[];
+    Blade blades[];
 };
 
 layout(set = 2, binding = 1) buffer CulledBlades {
-	  Blade culledBlades[];
+    Blade culledBlades[];
 };
 
 layout(set = 2, binding = 2) buffer NumBlades {

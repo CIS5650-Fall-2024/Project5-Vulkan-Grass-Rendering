@@ -130,7 +130,7 @@ int main() {
         },
         { 0, 1, 2, 2, 3, 0 }
     );
-    plane->SetTexture(grassImage);;
+    plane->SetTexture(grassImage);
     
     Blades* blades = new Blades(device, transferCommandPool, planeDim);
 
