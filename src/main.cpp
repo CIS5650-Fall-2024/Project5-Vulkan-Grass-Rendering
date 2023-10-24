@@ -163,5 +163,6 @@ int main() {
     delete device;
     delete instance;
     DestroyWindow();
+    system("pause");
     return 0;
 }
