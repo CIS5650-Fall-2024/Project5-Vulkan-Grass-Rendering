@@ -6,6 +6,9 @@
 #include "Scene.h"
 #include "Image.h"
 
+#include <sstream>
+#include <iomanip>
+
 Device* device;
 SwapChain* swapChain;
 Renderer* renderer;
@@ -143,10 +146,34 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    int frames = 0;
+    float timeBase = 0;
+
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
+
+        float totalTime = scene->getTotalTime();
+        ++frames;
+
+        if (timeBase == 0)
+        {
+            if (totalTime < 3)
+            {
+                continue;
+            }
+
+            timeBase = totalTime;
+            frames = 0;
+        }
+
+        totalTime -= timeBase;
+
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2);
+        oss << "Vulkan Grass Rendering [" << frames / totalTime << " fps]";
+        glfwSetWindowTitle(GetGLFWWindow(), oss.str().c_str());
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());
