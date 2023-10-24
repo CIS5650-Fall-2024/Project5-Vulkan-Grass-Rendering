@@ -1,0 +1,35 @@
+=========================
+num blades
+=========================
+
+without culling
+-------------------------
+2^8: 746 fps
+2^10: 753 fps
+2^12: 716 fps
+2^14: 486 fps
+2^16: 161 fps
+2^18: 45.3 fps
+2^20: 11.5 fps
+
+with culling
+-------------------------
+2^8: 735 fps
+2^10: 717 fps
+2^12: 722 fps
+2^14: 605 fps
+2^16: 245 fps
+2^18: 73.4 fps
+2^20: 20.2 fps
+
+=========================
+culling
+=========================
+
+2^14 blades
+
+no culling: 486 fps
+orientation culling only: 552 fps
+frustum culling only: 506 fps
+distance culling only: 499 fps
+all culling: 605 fps

@@ -159,15 +159,13 @@ int main() {
 
         if (timeBase == 0)
         {
-            if (frames < 1000)
+            if (totalTime < 3)
             {
                 continue;
             }
-            else if (frames == 1000)
-            {
-                timeBase = totalTime;
-                frames = 0;
-            }
+
+            timeBase = totalTime;
+            frames = 0;
         }
 
         totalTime -= timeBase;
