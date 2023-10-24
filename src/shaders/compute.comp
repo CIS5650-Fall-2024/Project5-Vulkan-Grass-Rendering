@@ -50,9 +50,15 @@ bool inBounds(float value, float bounds) {
 
 void main() {
 	// Reset the number of blades to 0
-	uint idx = gl_GlobalInvocationID.x;
+	uint threadInOneGroup = gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z;
+	uint groupOffset = 
+		gl_NumWorkGroups.x * gl_NumWorkGroups.y * gl_WorkGroupID.z
+		+ gl_NumWorkGroups.x * gl_WorkGroupID.y
+		+ gl_WorkGroupID.x;
+	uint idx = gl_LocalInvocationIndex + groupOffset * threadInOneGroup;
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+	//if (idx == 32) {
+		//numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 

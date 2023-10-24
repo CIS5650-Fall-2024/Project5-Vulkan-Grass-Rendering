@@ -19,7 +19,7 @@ private:
     
     VkBuffer timeBuffer;
     VkDeviceMemory timeBufferMemory;
-    Time time;
+    
     
     void* mappedData;
 
@@ -32,7 +32,7 @@ public:
     Scene() = delete;
     Scene(Device* device);
     ~Scene();
-
+    Time time;
     const std::vector<Model*>& GetModels() const;
     const std::vector<Blades*>& GetBlades() const;
     

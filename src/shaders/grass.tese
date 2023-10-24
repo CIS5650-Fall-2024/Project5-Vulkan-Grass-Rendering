@@ -24,11 +24,12 @@ void main() {
 
 	// TODO: Use u and v to parameterize along the grass blade and output positions for each vertex of the grass blade
     float orientation = inV0[0].w;
+    //vec4 posOffset = vec4(inV0[0].xyz,0);
     float width = inV2[0].w;
     vec4 vertical = vec4(inUp[0].xyz,0.0) * inV1[0].w;
 
-    vec4 horizontal = vec4(sin(orientation), cos(orientation), 0, 0) * width;
+    vec4 horizontal = vec4(sin(orientation), 0, cos(orientation), 0) * width;
     vec4 p0 = gl_in[0].gl_Position;
-    gl_Position =  p0 + horizontal * u + v * vertical;
+    gl_Position =  p0 + horizontal * u +  vertical * v;
     gl_Position = camera.proj * camera.view * gl_Position;
 }

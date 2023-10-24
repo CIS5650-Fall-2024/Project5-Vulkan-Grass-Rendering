@@ -469,12 +469,12 @@ void Renderer::CreateComputeDescriptorSets() {
         VkDescriptorBufferInfo bladeInfo = {};
         bladeInfo.buffer = scene->GetBlades()[i]->GetBladesBuffer();
         bladeInfo.offset = 0;
-        bladeInfo.range = sizeof(Blade);
+        bladeInfo.range = NUM_BLADES * sizeof(Blade);
 
         VkDescriptorBufferInfo culledBladeInfo = {};
         culledBladeInfo.buffer = scene->GetBlades()[i]->GetCulledBladesBuffer();
         culledBladeInfo.offset = 0;
-        culledBladeInfo.range = sizeof(Blade);
+        culledBladeInfo.range = NUM_BLADES * sizeof(Blade);
 
         VkDescriptorBufferInfo numBladesInfo = {};
         numBladesInfo.buffer = scene->GetBlades()[i]->GetNumBladesBuffer();
@@ -1045,7 +1045,8 @@ void Renderer::RecordComputeCommandBuffer() {
     int n = scene->GetBlades().size();
     for (int i = 0;i < n;++i) {
         vkCmdBindDescriptorSets(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 2, 1, &(computeDescriptorSets[i]), 0, nullptr);
-        vkCmdDispatch(computeCommandBuffer, NUM_BLADES, 1, 1);
+        int invokeNum = std::ceil( float(NUM_BLADES) / float(WORKGROUP_SIZE));
+        vkCmdDispatch(computeCommandBuffer, invokeNum , 1, 1);
     }
 
     // ~ End recording ~

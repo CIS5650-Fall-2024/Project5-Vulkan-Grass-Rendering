@@ -20,6 +20,7 @@ out gl_PerVertex {
     vec4 gl_Position;
 };
 
+
 // layout(location = 0) out vec3 fragColor;
 // layout(location = 1) out vec2 fragTexCoord;
 layout(location = 0) out vec4 outV0;
