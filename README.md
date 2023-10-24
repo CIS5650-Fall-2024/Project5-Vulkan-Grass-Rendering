@@ -45,6 +45,12 @@ This allows all three culling methods to take effect as some blades are parallel
 
 ### Number of blades
 
+![](img/charts/num_blades.png)
 
+As expected, performance drops as the number of blades increases. For the first couple sizes, there isn't a consistent difference between culling and no culling, likely because most of the rendering cost doesn't come from the grass blades themselves. However, as the grass blades increase in number, culling shows a clear improvement over no culling.
 
 ### Culling
+
+![](img/charts/culling.png)
+
+This chart shows the effect of each culling type on its own compared to no culling and all culling. Distance culling doesn't have much of an effect here since most of the blades are close to the camera, but it does offer a slight improvement. Frustum culling gave less of an improvement than I expected, but upon further consideration, I realized that most of the blades actually are in the frustum, so this makes sense. Lastly, orientation culling gives a surprisingly large performance boost. I didn't expect that as I thought there would be less blades parallel to the camera's view direction.
