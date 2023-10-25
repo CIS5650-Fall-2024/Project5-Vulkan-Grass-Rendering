@@ -6,6 +6,7 @@
 
 struct CameraBufferObject {
 	glm::vec4 forward;//add
+    glm::vec4 position;
 	glm::mat4 viewMatrix;
 	glm::mat4 projectionMatrix;
 };

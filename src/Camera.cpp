@@ -32,6 +32,7 @@ Camera::Camera(Device* device, float aspectRatio) : device(device) {
     ref = glm::vec3(0,1,0);
     updateAttrb();
     cameraBufferObject.forward = glm::vec4(forward,0);
+    cameraBufferObject.position = glm::vec4(eye,1);
     cameraBufferObject.viewMatrix = getViewMatrix();
     //for (int i = 0;i < 4;++i) {
     //    for (int j = 0;j < 4;++j) {
@@ -71,6 +72,7 @@ void Camera::UpdateOrbit(float deltaX, float deltaY, float deltaZ) {
     eye = ref - glm::vec3(cosPhi * sinTheta, sinPhi, cosPhi * cosTheta) * r;
     updateAttrb();
     cameraBufferObject.forward = glm::vec4(forward, 0);
+    cameraBufferObject.position = glm::vec4(eye, 1);
     cameraBufferObject.viewMatrix = getViewMatrix();//glm::inverse(finalTransform);
 
     memcpy(mappedData, &cameraBufferObject, sizeof(CameraBufferObject));
@@ -82,7 +84,8 @@ void Camera::UpdatePosition(float fwd, float rt)
     eye += diff;
     ref += diff;
     cameraBufferObject.forward = glm::vec4(forward,0);
-    cameraBufferObject.viewMatrix = getViewMatrix();//glm::inverse(finalTransform);
+    cameraBufferObject.position = glm::vec4(eye, 1);
+    cameraBufferObject.viewMatrix = getViewMatrix();
 
     memcpy(mappedData, &cameraBufferObject, sizeof(CameraBufferObject));
 }

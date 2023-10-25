@@ -2,10 +2,14 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define WORKGROUP_SIZE 32
+#define DISTANCE_LEVEL 4
+#define MAX_DISTANCE 20.0
+
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
 	vec4 fwd;
+	vec4 pos;
     mat4 view;
     mat4 proj;
 } camera;
@@ -81,6 +85,14 @@ bool frustumCull(Blade blade){
 	}
 	return false;
 }
+bool distanceCull(Blade blade, uint idx){
+	vec3 v0 = blade.v0.xyz;
+	vec3 c = camera.pos.xyz;
+	vec3 up = blade.up.xyz;
+	float dproj = length(v0 - c - up * dot(v0-c,up));
+	int cmp = int(floor(DISTANCE_LEVEL * (1.0 - (dproj/MAX_DISTANCE))));
+	return mod(idx, DISTANCE_LEVEL) > cmp;
+}
 
 void main() {
 	// Reset the number of blades to 0
@@ -102,8 +114,7 @@ void main() {
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
 	Blade currentBlade = blades[idx];
-	bool culled = orientationCull(currentBlade);
-	culled = culled || frustumCull(currentBlade);
+	bool culled = orientationCull(currentBlade) || frustumCull(currentBlade) || distanceCull(currentBlade, idx);
 
 	if(!culled){
 		uint dstIdx = atomicAdd(numBlades.vertexCount,1);
