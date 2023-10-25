@@ -4,14 +4,20 @@
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
-
-// TODO: Declare fragment shader inputs
 
 layout(location = 0) out vec4 outColor;
 
-void main() {
-    // TODO: Compute fragment color
+layout(location = 0) in vec4 N;
+layout(location = 1) in vec4 L;
 
-    outColor = vec4(1.0);
+void main() {
+    float diffuse = abs(dot(normalize(N), normalize(L)));
+    diffuse = clamp(diffuse, 0.0, 1.0);
+
+    float amb = 0.2;
+    float intensity = diffuse + amb;
+
+    outColor = vec4(0.0, 1.0, 0.0, 1.0) * intensity;
 }
