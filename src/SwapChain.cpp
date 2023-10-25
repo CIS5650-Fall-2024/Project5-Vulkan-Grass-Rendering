@@ -74,14 +74,17 @@ SwapChain::SwapChain(Device* device, VkSurfaceKHR vkSurface, unsigned int numBuf
     }
 }
 
-void SwapChain::Create() {
+void SwapChain::Create(int w, int h) {
     auto* instance = device->GetInstance();
 
     const auto& surfaceCapabilities = instance->GetSurfaceCapabilities();
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(instance->GetSurfaceFormats());
     VkPresentModeKHR presentMode = chooseSwapPresentMode(instance->GetPresentModes());
-    VkExtent2D extent = chooseSwapExtent(surfaceCapabilities, GetGLFWWindow());
+    VkExtent2D extent{ w, h };
+    if (w == 0 || h == 0) {
+        extent = chooseSwapExtent(surfaceCapabilities, GetGLFWWindow());
+    }
 
     uint32_t imageCount = surfaceCapabilities.minImageCount + 1;
     imageCount = numBuffers > imageCount ? numBuffers : imageCount;
@@ -188,9 +191,9 @@ VkSemaphore SwapChain::GetRenderFinishedVkSemaphore() const {
     return renderFinishedSemaphore;
 }
 
-void SwapChain::Recreate() {
+void SwapChain::Recreate(int w, int h) {
     Destroy();
-    Create();
+    Create(w, h);
 }
 
 bool SwapChain::Acquire() {
@@ -235,6 +238,9 @@ bool SwapChain::Present() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         Recreate();
         return false;
+    }
+    else if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to present swap chain image");
     }
 
     return true;
