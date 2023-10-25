@@ -1,4 +1,7 @@
 #include <vulkan/vulkan.h>
+#include <iostream>
+#include <thread>
+#include <chrono>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
@@ -66,6 +69,12 @@ namespace {
 }
 
 int main() {
+
+    // sleep
+    std::cout << "Sleeping ..." << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::cout << "Done sleeping" << std::endl;
+
     static constexpr char* applicationName = "Vulkan Grass Rendering";
     InitializeWindow(640, 480, applicationName);
 
@@ -116,6 +125,8 @@ int main() {
         grassImageMemory
     );
 
+    std::cout << "Grass image created" << std::endl;
+
     float planeDim = 15.f;
     float halfWidth = planeDim * 0.5f;
     Model* plane = new Model(device, transferCommandPool,
@@ -128,6 +139,8 @@ int main() {
         { 0, 1, 2, 2, 3, 0 }
     );
     plane->SetTexture(grassImage);
+
+    std::cout << "Plane created" << std::endl;
     
     Blades* blades = new Blades(device, transferCommandPool, planeDim);
 
@@ -137,7 +150,11 @@ int main() {
     scene->AddModel(plane);
     scene->AddBlades(blades);
 
+    std::cout << "Scene created" << std::endl;
+
     renderer = new Renderer(device, swapChain, scene, camera);
+
+    std::cout << "Renderer created" << std::endl;
 
     glfwSetWindowSizeCallback(GetGLFWWindow(), resizeCallback);
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);

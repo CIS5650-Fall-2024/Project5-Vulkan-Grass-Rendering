@@ -6,6 +6,7 @@
 #include "QueueFlags.h"
 #include "SwapChain.h"
 
+class Instance;
 class SwapChain;
 class Device {
     friend class Instance;

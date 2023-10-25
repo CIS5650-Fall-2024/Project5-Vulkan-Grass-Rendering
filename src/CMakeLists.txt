@@ -8,7 +8,7 @@ file(GLOB IMAGES
 
 foreach(IMAGE ${IMAGES})
     get_filename_component(fname ${IMAGE} NAME)
-    configure_file(${IMAGE} ${CMAKE_CURRENT_BINARY_DIR}/images/${fname} COPYONLY)
+    configure_file(${IMAGE} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/images/${fname} COPYONLY)
 endforeach()
 
 file(GLOB_RECURSE SHADER_SOURCES
@@ -30,8 +30,10 @@ else(WIN32)
     target_link_libraries(vulkan_grass_rendering ${CMAKE_THREAD_LIBS_INIT})
 endif(WIN32)
 
+set(COMPILED_SHADERS "")
+
 foreach(SHADER_SOURCE ${SHADER_SOURCES})
-    set(SHADER_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+    set(SHADER_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders)
 
     if(WIN32)
         get_filename_component(fname ${SHADER_SOURCE} NAME)
@@ -42,10 +44,25 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
         )
         ExternalTarget("Shaders" ${fname}.spv)
         add_dependencies(vulkan_grass_rendering ${fname}.spv)
+    else(WIN32)
+        get_filename_component(fname ${SHADER_SOURCE} NAME)
+        set(SHADER_OUTPUT ${SHADER_DIR}/${fname}.spv)
+
+        add_custom_command(
+            OUTPUT ${SHADER_OUTPUT}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_DIR}
+            COMMAND glslc ${SHADER_SOURCE} -o ${SHADER_OUTPUT}
+            DEPENDS ${SHADER_SOURCE}
+            COMMENT "Compiling ${fname} to SPIR-V"
+        )
+
+        list(APPEND COMPILED_SHADERS ${SHADER_OUTPUT})
     endif(WIN32)
 
-    # TODO: Build shaders on not windows
 endforeach()
+
+add_custom_target(compile_shaders DEPENDS ${COMPILED_SHADERS})
+add_dependencies(vulkan_grass_rendering compile_shaders)
 
 target_link_libraries(vulkan_grass_rendering ${ASSIMP_LIBRARIES} Vulkan::Vulkan glfw)
 target_include_directories(vulkan_grass_rendering PRIVATE

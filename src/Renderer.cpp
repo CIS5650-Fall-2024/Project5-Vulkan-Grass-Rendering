@@ -198,6 +198,25 @@ void Renderer::CreateComputeDescriptorSetLayout() {
     // TODO: Create the descriptor set layout for the compute pipeline
     // Remember this is like a class definition stating why types of information
     // will be stored at each binding
+    // VkDescriptorSetLayoutBinding grassBladeDataLayoutBinding = {};
+    // grassBladeDataLayoutBinding.binding = 0;
+    // grassBladeDataLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;  // use storage buffer
+    // grassBladeDataLayoutBinding.descriptorCount = 1;  // number of descriptors in this binding
+    // grassBladeDataLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;  // accessible in compute shader
+    // grassBladeDataLayoutBinding.pImmutableSamplers = nullptr;  // not applicable for storage buffer
+
+    // // Create an array of layout bindings
+    // std::vector<VkDescriptorSetLayoutBinding> bindings = { grassBladeDataLayoutBinding };
+
+    // // Create the descriptor set layout
+    // VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+    // layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    // layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+    // layoutInfo.pBindings = bindings.data();
+
+    // if (vkCreateDescriptorSetLayout(logicalDevice, &layoutInfo, nullptr, &computeDescriptorSetLayout) != VK_SUCCESS) {
+    //     throw std::runtime_error("Failed to create descriptor set layout");
+    // }
 }
 
 void Renderer::CreateDescriptorPool() {
