@@ -48,14 +48,38 @@ layout(set = 2, binding = 2) buffer NumBlades {
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
+
 // v0: the position of the grass blade on the geomtry
 // v1: a Bezier curve guide that is always "above" v0 with respect to the grass blade's up vector (explained soon)
 // v2: a physical guide for which we simulate forces on
 // v0.w holds orientation, v1.w holds height, v2.w holds width, and up.w holds the stiffness coefficient.
-bool orientationTest(Blade blade){
+bool orientationCull(Blade blade){
 	float orientation = blade.v0.w;
 	vec3 dirB = vec3(sin(orientation), 0, cos(orientation));
-	return abs(dot(dirB,camera.fwd.xyz)) < 0.9;
+	return abs(dot(dirB,camera.fwd.xyz)) > 0.9;
+}
+bool inFrustum(mat4 VP, vec4 pt){
+	vec4 clipPt = VP * pt;
+	float h = clipPt.w + 0.02;
+	clipPt.z = (clipPt.z - 0.5 * clipPt.w) * 2;//current glm::perspective z is 0-1
+	if(   
+		(!inBounds(clipPt.x,h))
+		||(!inBounds(clipPt.y,h))
+		||(!inBounds(clipPt.z,h))
+	){
+		return false;
+	}
+	return true;
+}
+bool frustumCull(Blade blade){
+	vec4 v0 = vec4(blade.v0.xyz,1);
+	vec4 v2 = vec4(blade.v2.xyz,1);
+	vec4 m = vec4(0.25*blade.v0.xyz * 0.5*blade.v1.xyz * 0.25*blade.v2.xyz,1);
+	mat4 VP = camera.proj * camera.view;
+	if(!inFrustum(VP,v0) && !inFrustum(VP,v2) && !inFrustum(VP,m)){
+		return true;
+	}
+	return false;
 }
 
 void main() {
@@ -78,7 +102,8 @@ void main() {
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
 	Blade currentBlade = blades[idx];
-	bool culled = !orientationTest(currentBlade);
+	bool culled = orientationCull(currentBlade);
+	culled = culled || frustumCull(currentBlade);
 
 	if(!culled){
 		uint dstIdx = atomicAdd(numBlades.vertexCount,1);
