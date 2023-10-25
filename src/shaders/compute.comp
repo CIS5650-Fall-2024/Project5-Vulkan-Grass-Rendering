@@ -5,6 +5,7 @@
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
+	vec4 fwd;
     mat4 view;
     mat4 proj;
 } camera;
@@ -47,6 +48,15 @@ layout(set = 2, binding = 2) buffer NumBlades {
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
+// v0: the position of the grass blade on the geomtry
+// v1: a Bezier curve guide that is always "above" v0 with respect to the grass blade's up vector (explained soon)
+// v2: a physical guide for which we simulate forces on
+// v0.w holds orientation, v1.w holds height, v2.w holds width, and up.w holds the stiffness coefficient.
+bool orientationTest(Blade blade){
+	float orientation = blade.v0.w;
+	vec3 dirB = vec3(sin(orientation), 0, cos(orientation));
+	return abs(dot(dirB,camera.fwd.xyz)) < 0.9;
+}
 
 void main() {
 	// Reset the number of blades to 0
@@ -57,8 +67,7 @@ void main() {
 		+ gl_WorkGroupID.x;
 	uint idx = gl_LocalInvocationIndex + groupOffset * threadInOneGroup;
 	if (gl_GlobalInvocationID.x == 0) {
-	//if (idx == 32) {
-		//numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
@@ -68,5 +77,11 @@ void main() {
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
-	culledBlades[idx] = blades[idx];
+	Blade currentBlade = blades[idx];
+	bool culled = !orientationTest(currentBlade);
+
+	if(!culled){
+		uint dstIdx = atomicAdd(numBlades.vertexCount,1);
+		culledBlades[dstIdx] = currentBlade; 
+	}
 }

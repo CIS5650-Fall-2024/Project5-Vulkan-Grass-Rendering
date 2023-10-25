@@ -31,10 +31,17 @@ Camera::Camera(Device* device, float aspectRatio) : device(device) {
     eye = glm::vec3(0, 1, r);
     ref = glm::vec3(0,1,0);
     updateAttrb();
+    cameraBufferObject.forward = glm::vec4(forward,0);
     cameraBufferObject.viewMatrix = getViewMatrix();
-    //glm::lookAt(glm::vec3(0.0f, 1.0f, 10.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    //for (int i = 0;i < 4;++i) {
+    //    for (int j = 0;j < 4;++j) {
+    //        std::cout << cameraBufferObject.viewMatrix[j][i] << " ";
+    //    }
+    //    std::cout << std::endl;
+    //}
     cameraBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
     cameraBufferObject.projectionMatrix[1][1] *= -1; // y-coordinate is flipped
+    
 
     BufferUtils::CreateBuffer(device, sizeof(CameraBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer, bufferMemory);
     vkMapMemory(device->GetVkDevice(), bufferMemory, 0, sizeof(CameraBufferObject), 0, &mappedData);
@@ -63,6 +70,7 @@ void Camera::UpdateOrbit(float deltaX, float deltaY, float deltaZ) {
     float cosTheta = glm::cos(radTheta);
     eye = ref - glm::vec3(cosPhi * sinTheta, sinPhi, cosPhi * cosTheta) * r;
     updateAttrb();
+    cameraBufferObject.forward = glm::vec4(forward, 0);
     cameraBufferObject.viewMatrix = getViewMatrix();//glm::inverse(finalTransform);
 
     memcpy(mappedData, &cameraBufferObject, sizeof(CameraBufferObject));
@@ -73,7 +81,7 @@ void Camera::UpdatePosition(float fwd, float rt)
     glm::vec3 diff = glm::normalize(glm::vec3(forward.x, 0, forward.z)) * fwd + glm::normalize(glm::vec3(right.x, 0, right.z))*rt;
     eye += diff;
     ref += diff;
-
+    cameraBufferObject.forward = glm::vec4(forward,0);
     cameraBufferObject.viewMatrix = getViewMatrix();//glm::inverse(finalTransform);
 
     memcpy(mappedData, &cameraBufferObject, sizeof(CameraBufferObject));
