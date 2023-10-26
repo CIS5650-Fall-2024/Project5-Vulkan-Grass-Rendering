@@ -4,6 +4,7 @@
 #define WORKGROUP_SIZE 32
 #define DISTANCE_LEVEL 4
 #define MAX_DISTANCE 20.0
+#define GRASS_MASS 0.01
 
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -17,7 +18,7 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
 layout(set = 1, binding = 0) uniform Time {
     float deltaTime;
     float totalTime;
-};
+} time;
 
 struct Blade {
     vec4 v0;
@@ -94,6 +95,49 @@ bool distanceCull(Blade blade, uint idx){
 	return mod(idx, DISTANCE_LEVEL) > cmp;
 }
 
+void physicalSimulation(inout Blade blade){
+	vec3 v0 = blade.v0.xyz;
+	vec3 v1 = blade.v1.xyz;
+	vec3 v2 = blade.v2.xyz;
+	vec3 up = blade.up.xyz;
+	float s = blade.up.w;//stiffness
+	float h = blade.v1.w;
+	float orientation = blade.v0.w;
+	vec4 horizontal = vec4(sin(orientation), 0, cos(orientation), 0);//along width direction
+	vec3 f = cross(horizontal.xyz, vec3(0,1,0));
+
+	//float collsionStrength;
+	vec3 Iv2 = v0 + up*h;
+	vec3 r = (Iv2 - v2) * s * 0.1;
+	vec3 gE = vec3(0,-9.8,0) * GRASS_MASS;
+	vec3 gF = 0.25 * 9.8 * f;
+	vec3 g = gE + gF;
+
+	vec3 wi = vec3(11 + 11 * sin(time.totalTime),0,0);//wi(v0)
+	float fd = 1 - abs(dot(normalize(wi),normalize(v2-v0)));
+	float fr = dot(v2 - v0,up)/h;
+	vec3 w = wi * fd * fr;
+
+	//apply force
+	vec3 segma = (r + g + w) * time.deltaTime;
+	v2 = v2 + segma;
+
+	v2 = v2 - up * min(dot(up,v2-v0),0);
+	float lproj = length(v2 - v0 - up*dot(v2-v0,up));
+	v1 = v0 + h * up * max(1 - lproj/h, 0.05 * max(lproj/h,1.0));
+
+	float L0 = distance(v0,v2);
+	float L1 = L0 + distance(v1,v2);
+	float L = (2*L0 + (2-1)*L1)/(2+1);
+	float rc = h/L;
+	vec3 v1c = v0 + rc * (v1 - v0);
+	v2 = v1c + rc *(v2 - v1);
+	v1 = v1c;
+
+	blade.v1 = vec4(v1, blade.v1.w);
+	blade.v2 = vec4(v2, blade.v2.w); 
+}
+
 void main() {
 	// Reset the number of blades to 0
 	uint threadInOneGroup = gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z;
@@ -114,6 +158,8 @@ void main() {
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
 	Blade currentBlade = blades[idx];
+	physicalSimulation(currentBlade);
+	blades[idx] = currentBlade;
 	bool culled = orientationCull(currentBlade) || frustumCull(currentBlade) || distanceCull(currentBlade, idx);
 
 	if(!culled){
