@@ -128,10 +128,10 @@ void main() {
             cullTest = false;
         }else{
             // 3.Distance test
-            vec3 cam = -vec3(camera.view[3][0], camera.view[3][1], camera.view[3][2]);
+            vec3 cam = (inverse(camera.view) * vec4(0, 0, 0, 1)).xyz;
             float d_proj = length(v0 - cam - up * dot((v0 - cam), up));
             float d_max = 25;
-            uint n = 10;
+            uint n = 8;
             int level = int(floor(n * (1.0 - d_proj / d_max)));
             if(int(gl_GlobalInvocationID.x % n) > level){
                 cullTest = false;
