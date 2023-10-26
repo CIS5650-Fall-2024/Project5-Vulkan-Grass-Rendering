@@ -4,7 +4,7 @@
 #define WORKGROUP_SIZE 32
 #define DISTANCE_LEVEL 4
 #define MAX_DISTANCE 20.0
-#define GRASS_MASS 0.01
+#define GRASS_MASS 0.02
 
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -113,7 +113,7 @@ void physicalSimulation(inout Blade blade){
 	vec3 gF = 0.25 * 9.8 * f;
 	vec3 g = gE + gF;
 
-	vec3 wi = vec3(11 + 11 * sin(time.totalTime),0,0);//wi(v0)
+	vec3 wi = 3 * vec3(1 + sin(time.totalTime),0,0);//wi(v0)
 	float fd = 1 - abs(dot(normalize(wi),normalize(v2-v0)));
 	float fr = dot(v2 - v0,up)/h;
 	vec3 w = wi * fd * fr;

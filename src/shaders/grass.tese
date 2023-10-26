@@ -20,7 +20,7 @@ layout(location = 1) in vec4 inV1[];
 layout(location = 2) in vec4 inV2[];
 layout(location = 3) in vec4 inUp[];
 
-layout(location = 0) out vec3 norm;
+layout(location = 0) out vec3 color;
 
 void main() {
     float u = gl_TessCoord.x;
@@ -44,15 +44,16 @@ void main() {
     vec3 c0 = c - width * horizontal.xyz;
     vec3 c1 = c + width * horizontal.xyz;
     vec3 t0 = normalize(b-a);
-    norm = cross(t0,horizontal.xyz);
+    vec3 norm = cross(t0,horizontal.xyz);
     float t = 
     //    u;//quad
     //    u + 0.5*v - u*v;//triangle
     //    u - u * v * v;//quadratic
-        0.5 + (u - 0.5) * (1 - max(v - 0.1,0)/(1 - 0.1));//tip trig
+        0.5 + (u - 0.5) * (1 - max(v - 0.4,0)/(1 - 0.4));//tip trig
 
     vec3 d = width * norm * (0.5 - abs(u - 0.5)*(1 - v));
     
     gl_Position = vec4(mix(c0,c1,t) + d,1);
     gl_Position = camera.proj * camera.view * gl_Position;
+    color = mix(vec3(55.0/255, 77.0/255,34.0/255), vec3(95.0/255, 129.0/255,57.0/255), v);
 }
