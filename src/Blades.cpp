@@ -40,7 +40,6 @@ Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) : Mode
     }
 
     auto printVec = [](glm::vec4 v) -> void {std::cout << "(" << v.x << ", " << v.y << "," << v.z << ", " << v.w << ")" << std::endl; };
-
     std::cout << "blades[0].v0" << std::endl; printVec(blades[0].v0);
     std::cout << "blades[0].v1" << std::endl; printVec(blades[0].v1);
     std::cout << "blades[0].v2" << std::endl; printVec(blades[0].v2);
