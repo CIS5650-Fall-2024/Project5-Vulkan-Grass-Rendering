@@ -3,8 +3,9 @@
 
 #define WORKGROUP_SIZE 32
 #define DISTANCE_LEVEL 4
-#define MAX_DISTANCE 20.0
-#define GRASS_MASS 0.02
+#define MAX_DISTANCE 25.0
+#define GRASS_MASS 0.1
+#define WIND_FORCE 0.2
 
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -110,13 +111,13 @@ void physicalSimulation(inout Blade blade){
 	vec3 Iv2 = v0 + up*h;
 	vec3 r = (Iv2 - v2) * s * 0.1;
 	vec3 gE = vec3(0,-9.8,0) * GRASS_MASS;
-	vec3 gF = 0.25 * 9.8 * f;
+	vec3 gF = 0.25 * 9.8 * GRASS_MASS * f;
 	vec3 g = gE + gF;
 
-	vec3 wi = 3 * vec3(1 + sin(time.totalTime),0,0);//wi(v0)
-	float fd = 1 - abs(dot(normalize(wi),normalize(v2-v0)));
+	vec3 wi = WIND_FORCE * vec3(1 + sin(time.totalTime + v0.x),0,0);//wi(v0)
+	float fd = dot(wi,wi) > 0 ?1 - abs(dot(normalize(wi),normalize(v2-v0))) : 1;
 	float fr = dot(v2 - v0,up)/h;
-	vec3 w = wi * fd * fr;
+	vec3 w = fd * fr * wi;
 
 	//apply force
 	vec3 segma = (r + g + w) * time.deltaTime;
@@ -160,7 +161,11 @@ void main() {
 	Blade currentBlade = blades[idx];
 	physicalSimulation(currentBlade);
 	blades[idx] = currentBlade;
-	bool culled = orientationCull(currentBlade) || frustumCull(currentBlade) || distanceCull(currentBlade, idx);
+	bool culled = false
+	 || orientationCull(currentBlade)
+	 || frustumCull(currentBlade) 
+	 || distanceCull(currentBlade, idx)
+	 ;
 
 	if(!culled){
 		uint dstIdx = atomicAdd(numBlades.vertexCount,1);

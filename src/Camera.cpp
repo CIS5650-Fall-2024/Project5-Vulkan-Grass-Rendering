@@ -86,6 +86,8 @@ void Camera::UpdatePosition(float fwd, float rt)
     cameraBufferObject.forward = glm::vec4(forward,0);
     cameraBufferObject.position = glm::vec4(eye, 1);
     cameraBufferObject.viewMatrix = getViewMatrix();
+    //std::cout << "act" << forward[0] << ", " << forward[1] << ", " << forward[2] << std::endl;
+    //std::cout << "mat" << cameraBufferObject.viewMatrix[0][2] << ", " << cameraBufferObject.viewMatrix[1][2] << ", " << cameraBufferObject.viewMatrix[2][2] << std::endl;
 
     memcpy(mappedData, &cameraBufferObject, sizeof(CameraBufferObject));
 }

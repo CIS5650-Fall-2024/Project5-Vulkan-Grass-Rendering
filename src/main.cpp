@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "Image.h"
+#include <iostream>
 
 Device* device;
 SwapChain* swapChain;
@@ -143,6 +144,7 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    float frameCnt = 0;
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
@@ -161,10 +163,11 @@ int main() {
                 camera->UpdatePosition(0,cameraSpeed * scene->time.deltaTime);
             }
         }
-
+        ++frameCnt;
         renderer->Frame();
     }
-
+    std::cout << "time pass: " << scene->time.totalTime << std::endl;
+    std::cout << "avg fps: " << frameCnt / scene->time.totalTime << std::endl;
     vkDeviceWaitIdle(device->GetVkDevice());
 
     vkDestroyImage(device->GetVkDevice(), grassImage, nullptr);

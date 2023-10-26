@@ -1,6 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define TENSSCOUNT 5.0
 layout(vertices = 1) out;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
@@ -32,10 +33,10 @@ void main() {
     outUp[gl_InvocationID] = inUp[gl_InvocationID];
 
 	// TODO: Set level of tesselation
-    gl_TessLevelInner[0] = 2.0;
-    gl_TessLevelInner[1] = 2.0;
-    gl_TessLevelOuter[0] = 2.0;
-    gl_TessLevelOuter[1] = 2.0;
-    gl_TessLevelOuter[2] = 2.0;
-    gl_TessLevelOuter[3] = 2.0;
+    gl_TessLevelInner[0] = TENSSCOUNT;
+    gl_TessLevelInner[1] = TENSSCOUNT;
+    gl_TessLevelOuter[0] = TENSSCOUNT;
+    gl_TessLevelOuter[1] = TENSSCOUNT;
+    gl_TessLevelOuter[2] = TENSSCOUNT;
+    gl_TessLevelOuter[3] = TENSSCOUNT;
 }
