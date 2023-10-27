@@ -39,12 +39,24 @@ void main() {
 
 	// TODO: Set level of tesselation
 
-    gl_TessLevelInner[0] = 2;
-    gl_TessLevelInner[1] = 2;
+    vec3 v0 = gl_in[gl_InvocationID].gl_Position.xyz;
+    vec3 up = in_up[gl_InvocationID].xyz;
+    vec3 cam = (inverse(camera.view) * vec4(0, 0, 0, 1)).xyz;
+    float d_proj = length(v0 - cam - up * dot((v0 - cam), up));
+    float d_min = 8;
+    float d_max = 25;
+    float r = clamp((d_proj - d_min) / (d_max - d_min), 0.0, 1.0);
+    // r = r * r;
 
-    gl_TessLevelOuter[0] = 4;
-    gl_TessLevelOuter[1] = 4;
-    gl_TessLevelOuter[2] = 4;
-    gl_TessLevelOuter[3] = 4;
+    uint innerLevel = uint(round(3 * (1 - r)));
+    uint outerLevel = uint(round(8 * (1 - r)));
+
+    gl_TessLevelInner[0] = innerLevel;
+    gl_TessLevelInner[1] = innerLevel;
+
+    gl_TessLevelOuter[0] = outerLevel;
+    gl_TessLevelOuter[1] = outerLevel;
+    gl_TessLevelOuter[2] = outerLevel;
+    gl_TessLevelOuter[3] = outerLevel;
     
 }
