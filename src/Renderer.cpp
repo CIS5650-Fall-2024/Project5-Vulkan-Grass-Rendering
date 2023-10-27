@@ -353,7 +353,7 @@ void Renderer::CreateGrassDescriptorSets() {
         throw std::runtime_error("Failed to allocate grass descriptor sets");
     }
 
-    std::vector<VkWriteDescriptorSet> descriptorWrites(2 * grassDescriptorSets.size());
+    std::vector<VkWriteDescriptorSet> descriptorWrites(grassDescriptorSets.size());
 
     for (uint32_t i = 0; i < scene->GetBlades().size(); ++i) {
         VkDescriptorBufferInfo grassModelBufferInfo = {};
@@ -361,15 +361,15 @@ void Renderer::CreateGrassDescriptorSets() {
         grassModelBufferInfo.offset = 0;
         grassModelBufferInfo.range = sizeof(ModelBufferObject);
 
-        descriptorWrites[2 * i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[2 * i].dstSet = grassDescriptorSets[i];
-        descriptorWrites[2 * i].dstBinding = 0;
-        descriptorWrites[2 * i].dstArrayElement = 0;
-        descriptorWrites[2 * i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[2 * i].descriptorCount = 1;
-        descriptorWrites[2 * i].pBufferInfo = &grassModelBufferInfo;
-        descriptorWrites[2 * i].pImageInfo = nullptr;
-        descriptorWrites[2 * i].pTexelBufferView = nullptr;
+        descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[i].dstSet = grassDescriptorSets[i];
+        descriptorWrites[i].dstBinding = 0;
+        descriptorWrites[i].dstArrayElement = 0;
+        descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[i].descriptorCount = 1;
+        descriptorWrites[i].pBufferInfo = &grassModelBufferInfo;
+        descriptorWrites[i].pImageInfo = nullptr;
+        descriptorWrites[i].pTexelBufferView = nullptr;
     }
 
     // Update descriptor sets
