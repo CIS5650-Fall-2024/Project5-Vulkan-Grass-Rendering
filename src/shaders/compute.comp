@@ -74,9 +74,9 @@ bool inBounds(float value, float bounds) {
 #define DIST_CULL 1
 
 #define TOLERANCE 0.2
-#define THRESHOLD 0.9
-#define MAX_DIST 60.0
+#define THRESHOLD 0.7
 #define NUM_BUCKET 10
+#define MAX_DIST 60.0
 
 vec3 windFunc(vec3 v0)
 {
@@ -93,7 +93,6 @@ bool inFrustum(vec3 p)
 
 void main()
 {
-
     uint id = gl_GlobalInvocationID.x;
 
 	// Reset the number of blades to 0
@@ -198,7 +197,11 @@ void main()
 #if DIST_CULL
 
     float dproj = length(v0 - camPos - up * dot(v0 - camPos, up));
-    if(mod(id, NUM_BUCKET) >= floor(NUM_BUCKET * (1 - dproj / MAX_DIST))) return;
+
+    float d_max = MAX_DIST;
+    int n_b = NUM_BUCKET;
+
+    if(mod(id, n_b) > floor(n_b * (1 - dproj / d_max))) return;
 
 #endif
 
