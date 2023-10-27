@@ -24,15 +24,15 @@ struct Blade {
 // TODO: Add bindings to:
 // 1. Store the input blades
 
-layout(set = 2, binding = 0) buffer allBlades
+layout(set = 2, binding = 0) buffer AllBlades
 {
-    Blade blades[];
+    Blade allBlades[];
 };
 // 2. Write out the culled blades
-layout(set = 2, binding = 1) buffer culledBlades
+layout(set = 2, binding = 1) buffer CulledBlades
 {
-    Blade blades[];
-}
+    Blade culledBlades[];
+};
 // 3. Write the total number of blades remaining
 layout(set = 2, binding = 2) buffer NumBlades {
  	  uint vertexCount;   // Write the number of blades remaining here
