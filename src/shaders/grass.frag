@@ -12,8 +12,23 @@ layout(location = 1) in vec3 fs_Nor;
 
 layout(location = 0) out vec4 outColor;
 
-void main() {
-    // TODO: Compute fragment color
+const vec3 green = vec3(0.11f, 0.62f, 0.0f);
+const vec3 lightPos = vec3(0.0f, 50.0f, 15.0f);
 
-    outColor = vec4(1.0);
+void main() {
+    // Compute fragment color
+
+    // Blinn-Phong
+    vec4 diffuseColor = vec4(green, 1.0f);
+
+    vec3 fs_LightVec = normalize(lightPos - fs_Pos);
+    float diffuseTerm = clamp(dot(normalize(fs_Nor), fs_LightVec), 0.0, 1.0);
+    float ambientTerm = 0.7f;
+
+    // vec4 fs_HalfVec = normalize((fs_CameraPos - fs_Pos + fs_LightVec) / 2.f);
+    // float specularTerm = max(pow(dot(fs_HalfVec, normalize(fs_Nor)), 20.0), 0.0);
+
+    float lightIntensity = diffuseTerm + ambientTerm; // + specularTerm
+
+    outColor = vec4(diffuseColor.rgb * lightIntensity, 1.0f);
 }
