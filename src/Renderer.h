@@ -55,7 +55,6 @@ private:
 
     VkDescriptorSetLayout cameraDescriptorSetLayout;
     VkDescriptorSetLayout modelDescriptorSetLayout;
-    VkDescriptorSetLayout grassDescriptorSetLayout;
     VkDescriptorSetLayout timeDescriptorSetLayout;
     VkDescriptorSetLayout computeDescriptorSetLayout;
     

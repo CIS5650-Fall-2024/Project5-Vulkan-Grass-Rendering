@@ -6,7 +6,7 @@
 #include "Camera.h"
 #include "Image.h"
 
-static constexpr unsigned int WORKGROUP_SIZE = 32;
+static constexpr unsigned int WORKGROUP_SIZE = 64;
 
 Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* camera)
   : device(device),
@@ -233,7 +233,10 @@ void Renderer::CreateDescriptorPool() {
         // Time (compute)
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1 },
 
-        // TODO: Add any additional types and counts of descriptors you will need to allocate
+        // Storage buffers (compute)
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 * static_cast<uint32_t>(scene->GetBlades().size())},
+
+        // Add any additional types and counts of descriptors you will need to allocate
     };
 
     VkDescriptorPoolCreateInfo poolInfo = {};
@@ -341,7 +344,7 @@ void Renderer::CreateGrassDescriptorSets() {
     grassDescriptorSets.resize(scene->GetBlades().size());
 
     // Describe the desciptor set
-    VkDescriptorSetLayout layouts[] = { grassDescriptorSetLayout };
+    VkDescriptorSetLayout layouts[] = { modelDescriptorSetLayout };
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;
@@ -839,7 +842,7 @@ void Renderer::CreateComputePipeline() {
     computeShaderStageInfo.module = computeShaderModule;
     computeShaderStageInfo.pName = "main";
 
-    // TODO: Add the compute dsecriptor set layout you create to this list
+    // Add the compute dsecriptor set layout you create to this list
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { cameraDescriptorSetLayout, timeDescriptorSetLayout, computeDescriptorSetLayout };
 
     // Create pipeline layout
@@ -1006,7 +1009,12 @@ void Renderer::RecordComputeCommandBuffer() {
     // Bind descriptor set for time uniforms
     vkCmdBindDescriptorSets(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 1, 1, &timeDescriptorSet, 0, nullptr);
 
-    // TODO: For each group of blades bind its descriptor set and dispatch
+    // For each group of blades bind its descriptor set and dispatch
+    for (int i = 0; i < scene->GetBlades().size(); i++)
+    {
+        vkCmdBindDescriptorSets(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 2, 1, &computeDescriptorSets[i], 0, nullptr);
+        vkCmdDispatch(computeCommandBuffer, (NUM_BLADES / WORKGROUP_SIZE) + 1, 1, 1);
+    }
 
     // ~ End recording ~
     if (vkEndCommandBuffer(computeCommandBuffer) != VK_SUCCESS) {
@@ -1098,14 +1106,12 @@ void Renderer::RecordCommandBuffers() {
         for (uint32_t j = 0; j < scene->GetBlades().size(); ++j) {
             VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetCulledBladesBuffer() };
             VkDeviceSize offsets[] = { 0 };
-            // TODO: Uncomment this when the buffers are populated
-            // vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
             // Bind the descriptor set for each grass blades model
             vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, computePipelineLayout, 1, 1, &grassDescriptorSets[j], 0, nullptr);
             // Draw
-            // TODO: Uncomment this when the buffers are populated
-            // vkCmdDrawIndirect(commandBuffers[i], scene->GetBlades()[j]->GetNumBladesBuffer(), 0, 1, sizeof(BladeDrawIndirect));
+            vkCmdDrawIndirect(commandBuffers[i], scene->GetBlades()[j]->GetNumBladesBuffer(), 0, 1, sizeof(BladeDrawIndirect));
         }
 
         // End render pass
@@ -1181,7 +1187,6 @@ Renderer::~Renderer() {
     vkDestroyDescriptorSetLayout(logicalDevice, computeDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(logicalDevice, modelDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(logicalDevice, timeDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorSetLayout(logicalDevice, grassDescriptorSetLayout, nullptr);
 
     vkDestroyDescriptorPool(logicalDevice, descriptorPool, nullptr);
 
