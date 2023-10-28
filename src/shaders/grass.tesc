@@ -20,12 +20,12 @@ layout(location = 2) out vec4 teV2[];
 float comptuteLOD(vec3 c, vec3 p) {
     float d = distance(c, p);
     float lod = 1.0;
-    if (d > 15.0)
+    if (d > 50.0)
         lod = 1.0;
     else {
         lod = 10.0;
     }
-    return lod;
+    return 10.0;
 }
 
 void main() {

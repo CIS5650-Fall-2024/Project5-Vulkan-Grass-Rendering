@@ -14,7 +14,7 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     // TODO: Compute fragment color
-    vec3 base = vec3(0.1, 0.8, 0.1);
+    vec3 base = vec3(0.0, 1.0, 0.0);
     vec3 ambient = vec3(0.1, 0.3, 0.1);
     vec3 lightPos = vec3(10.0, 60.0, 10.0);
     vec3 normal = normalize(fs_normal);
