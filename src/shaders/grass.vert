@@ -19,20 +19,33 @@ struct GrassBlade {
     vec4 up; // up vector + stiffness coefficient
 };
 
+layout(location = 0) in vec4 blade_v0;
+layout(location = 1) in vec4 blade_v1;
+layout(location = 2) in vec4 blade_v2;
+layout(location = 3) in vec4 blade_up;
 
-layout(location = 0) in GrassBlade grassBladeIn;
-layout(location = 0) out GrassBlade grassBladeOut;
+layout(location = 0) out vec4 blade_v0_out;
+layout(location = 1) out vec4 blade_v1_out;
+layout(location = 2) out vec4 blade_v2_out;
+layout(location = 3) out vec4 blade_up_out;
 
 out gl_PerVertex {
     vec4 gl_Position;
+    float gl_PointSize;
+    float gl_ClipDistance[];
 };
 
 void main() {
-	// Passing grass blade data to the next shader stage
-    grassBladeOut = grassBladeIn;
 
-    // For now, just transforming the first control point to clip space as a placeholder
-    // You may need to replace this with appropriate logic based on your actual needs
-    vec4 worldPosition = camera.view * camera.proj * vec4(grassBladeIn.v0.xyz, 1.0);
-    gl_Position = worldPosition;
+    gl_Position =  model * vec4(blade_v0.xyz, 1.0);
+
+    blade_v0_out = model * vec4(blade_v0.xyz, 1.0);
+    blade_v1_out = model * vec4(blade_v1.xyz, 1.0);
+    blade_v2_out = model * vec4(blade_v2.xyz, 1.0);
+    blade_up_out = model * vec4(blade_up.xyz, 1.0);
+
+    blade_v0_out.w = blade_v0.w;
+    blade_v1_out.w = blade_v1.w;
+    blade_v2_out.w = blade_v2.w;
+    blade_up_out.w = blade_up.w;
 }

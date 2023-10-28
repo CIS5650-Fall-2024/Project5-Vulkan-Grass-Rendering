@@ -14,6 +14,9 @@ Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) : Mode
         Blade currentBlade = Blade();
 
         glm::vec3 bladeUp(0.0f, 1.0f, 0.0f);
+        // perturb up vector
+        bladeUp.x += (generateRandomFloat() - 0.5f) * 0.2f;
+        bladeUp.z += (generateRandomFloat() - 0.5f) * 0.2f;
 
         // Generate positions and direction (v0)
         float x = (generateRandomFloat() - 0.5f) * planeDim;
@@ -45,7 +48,7 @@ Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) : Mode
     indirectDraw.firstInstance = 0;
 
     BufferUtils::CreateBufferFromData(device, commandPool, blades.data(), NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, bladesBuffer, bladesBufferMemory);
-    BufferUtils::CreateBuffer(device, NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, culledBladesBuffer, culledBladesBufferMemory);
+    BufferUtils::CreateBuffer(device, NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, culledBladesBuffer, culledBladesBufferMemory);
     BufferUtils::CreateBufferFromData(device, commandPool, &indirectDraw, sizeof(BladeDrawIndirect), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, numBladesBuffer, numBladesBufferMemory);
 }
 

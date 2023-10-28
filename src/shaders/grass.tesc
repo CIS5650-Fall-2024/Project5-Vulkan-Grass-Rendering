@@ -8,32 +8,39 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 proj;
 } camera;
 
-struct GrassBlade {
-    vec4 v0;
-    vec4 v1;
-    vec4 v2;
-    vec4 up;
-}
 
-// TODO: Declare tessellation control shader inputs and outputs
+layout(location = 0) in vec4 blade_v0[];
+layout(location = 1) in vec4 blade_v1[];
+layout(location = 2) in vec4 blade_v2[];
+layout(location = 3) in vec4 blade_up[];
 
-layout(location = 0) in GrassBlade grassBladeIn;
-layout(location = 0) out GrassBlade grassBladeOut;
+layout(location = 0) out vec4 blade_v0_out[];
+layout(location = 1) out vec4 blade_v1_out[];
+layout(location = 2) out vec4 blade_v2_out[];
+layout(location = 3) out vec4 blade_up_out[];
+
+in gl_PerVertex {
+    vec4 gl_Position;
+    float gl_PointSize;
+    float gl_ClipDistance[];
+} gl_in[];
+
 
 void main() {
-
-    grassBladeOut = grassBladeIn;
 
 	// Don't move the origin location of the patch
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 
-	// TODO: Write any shader outputs
+    // Pass the grass blade data through
+    blade_v0_out[gl_InvocationID] = blade_v0[gl_InvocationID];
+    blade_v1_out[gl_InvocationID] = blade_v1[gl_InvocationID];
+    blade_v2_out[gl_InvocationID] = blade_v2[gl_InvocationID];
+    blade_up_out[gl_InvocationID] = blade_up[gl_InvocationID];
 
-	// TODO: Set level of tesselation aka how many new vertices to generate
-    gl_TessLevelInner[0] = 5.0
-    gl_TessLevelInner[1] = 5.0
-    gl_TessLevelOuter[0] = 5.0
-    gl_TessLevelOuter[1] = 5.0
-    gl_TessLevelOuter[2] = 5.0
-    gl_TessLevelOuter[3] = 5.0
+    gl_TessLevelInner[0] = 5;
+    gl_TessLevelInner[1] = 5;
+    gl_TessLevelOuter[0] = 5;
+    gl_TessLevelOuter[1] = 5;
+    gl_TessLevelOuter[2] = 5;
+    gl_TessLevelOuter[3] = 5;
 }
