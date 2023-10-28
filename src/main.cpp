@@ -127,7 +127,7 @@ int main() {
 
     std::cout << "Grass image created" << std::endl;
 
-    float planeDim = 15.f;
+    float planeDim = 150.f;
     float halfWidth = planeDim * 0.5f;
     Model* plane = new Model(device, transferCommandPool,
         {

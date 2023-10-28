@@ -7,9 +7,11 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
 } camera;
 
 
-layout(location = 0) out vec4 outColor;
 
 layout(location = 0) in vec3 grassNormal;
+layout(location = 1) in vec3 grassPosition;
+
+layout(location = 0) out vec4 outColor;
 
 void main() {
 
