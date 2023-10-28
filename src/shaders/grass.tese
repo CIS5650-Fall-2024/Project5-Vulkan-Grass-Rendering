@@ -39,7 +39,7 @@ void main() {
     vec3 p10 = mix(p00, p01, v);
 
     vec3 dir_vec = vec3(cos(direction), 0, sin(direction));
-    width = mix(0.5f * width, 0.f, v);
+    width = mix(width, 0.f, v);
 
     float t = u + 0.5f * v - u * v;
 
