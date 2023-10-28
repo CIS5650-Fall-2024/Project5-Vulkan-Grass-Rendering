@@ -76,7 +76,7 @@ int main() {
     std::cout << "Done sleeping" << std::endl;
 
     static constexpr char* applicationName = "Vulkan Grass Rendering";
-    InitializeWindow(640, 480, applicationName);
+    InitializeWindow(1920, 1080, applicationName);
 
     unsigned int glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -160,10 +160,16 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    float t0 = glfwGetTime();
+
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
+        float t1 = glfwGetTime();
+        float dt = t1 - t0;
+        std::cout << "FPS: " << 1.0f / dt << std::endl;
+        t0 = t1;
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());
