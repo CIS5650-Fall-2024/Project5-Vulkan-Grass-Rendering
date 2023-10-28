@@ -50,6 +50,10 @@ Gravity, Recovery, and Wind are implemented in the simulation.
 
 ##### Gravity only
 
+
+https://github.com/GrahamZen/Project5-Vulkan-Grass-Rendering/assets/31180310/93f38286-d466-4b82-9077-4f39372a6fd9
+
+
 ##### Recovery added
 
 ![1698513814399](image/README/1698513814399.png)
@@ -59,17 +63,31 @@ Gravity, Recovery, and Wind are implemented in the simulation.
 I used a simple wind model that the wind is blowing from a fixed direction and the wind speed is a sinusoidal function of time.
 
 
+https://github.com/GrahamZen/Project5-Vulkan-Grass-Rendering/assets/31180310/598bbc32-18c1-4fb2-939a-2c66390f535f
+
+
 #### Culling
 
 Three culling methods are implemented in this project: orientation culling, view-frustum culling, and distance culling.
 
 ##### Orientation culling
 
+
+https://github.com/GrahamZen/Project5-Vulkan-Grass-Rendering/assets/31180310/9d3a5725-e416-4678-a0b4-6417d3c20eb3
+
+
 ##### View-frustum culling
 
 The grass blade is culled if v0, v2, and m are all outside the view frustum, where `m = (1/4)v0 * (1/2)v1 * (1/4)v2`.
 
+
+https://github.com/GrahamZen/Project5-Vulkan-Grass-Rendering/assets/31180310/e3b8ddb5-129b-4e02-ae29-7721032f71b6
+
+
 ##### Distance culling
+
+
+https://github.com/GrahamZen/Project5-Vulkan-Grass-Rendering/assets/31180310/ff399173-22b6-4352-b4a7-7dac4c686dfe
 
 
 ## Performance Analysis
