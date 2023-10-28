@@ -15,6 +15,7 @@ layout(location = 2) in vec4 up[];
 
 layout(location = 0) out vec4 fs_Nor;
 layout(location = 1) out vec4 fs_L;
+layout(location = 2) out float height;
 
 void main() {
     float u = gl_TessCoord.x;
@@ -41,8 +42,7 @@ void main() {
 
     fs_Nor = vec4(n, 1.0);
     fs_L = camera.invView * vec4(0.0, 0.0, 0.0, 1.0) - vec4(curr_v0, 1.0);
-
-    
+    height = v + 0.5;
 
 	// TODO: Use u and v to parameterize along the grass blade and output positions for each vertex of the grass blade
 }
