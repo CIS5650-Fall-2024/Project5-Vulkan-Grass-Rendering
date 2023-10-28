@@ -44,15 +44,31 @@ layout(set = 2, binding = 2) buffer NumBlades {
 	  uint firstInstance; // = 0
 } numBlades;
 
-const float G = 9.8f;
+// global controls
+// ***********************************
+const float G = 4.8f;
+const float TimeScale = 1.5f;
+const float WindScale = 2.f;
+const float OrientationThreshold = 0.9f;
+const float ViewFrustrumThreshold = 0.1f;
+const int DistanceCullLevels = 10;
+const float DistanceCullMax = 20.f;
 
-bool inBounds(float value, float bounds) {
-    return (value >= -bounds) && (value <= bounds);
+#define ENABLE_ORIENTATION_CULL 1
+#define ENABLE_FRUSTRUM_CULL 1
+#define ENABLE_DISTANCE_CULL 1
+// ***********************************
+
+bool inBounds(vec3 value, float bounds) {
+    return (value.x >= -bounds) && (value.x <= bounds) &&
+	(value.y >= -bounds) && (value.y <= bounds) &&
+	(value.z >= -bounds) && (value.z <= bounds);
 }
 
 vec3 GetForce(in const Blade blade)
 {
-	const float time_scale = 1.5f;
+	const float t = TimeScale * totalTime;
+
 	// attributes
 	const float direction = blade.v0.w;
 	const float height = blade.v1.w;
@@ -69,12 +85,12 @@ vec3 GetForce(in const Blade blade)
 
 	// wind function
 	const vec3 w_d = normalize(vec3(1, 0, 1));
-	const float w_m = blade.v0.y * sin(blade.v0.x + time_scale * totalTime) - blade.v0.x * cos(blade.v0.y + time_scale * totalTime);
+	const float w_m = blade.v0.y * sin(blade.v0.x + t) - blade.v0.x * cos(blade.v0.y + t);
 
 	const float fd = 1.f - abs(dot(w_d, normalize(blade.v2.xyz - blade.v0.xyz)));
 	const float fr = dot(blade.v2.xyz - blade.v0.xyz, blade.up.xyz) / height;
 
-	const vec3 w = w_d * w_m * fd * fr;
+	const vec3 w = WindScale * w_d * w_m * fd * fr;
 	
 	// total force
 	return g + r + w;
@@ -88,7 +104,7 @@ void ValidateBlade(inout Blade blade)
 	const float l_proj = length(blade.v2.xyz - blade.v0.xyz - dot(blade.v2.xyz - blade.v0.xyz, blade.up.xyz) * blade.up.xyz);
 
 	const float height = blade.v1.w;
-	blade.v1.xyz = blade.v0.xyz + height * blade.up.xyz * max(1.f - l_proj / height, 0.05f * max(l_proj / height, 1.f));
+	blade.v1.xyz = blade.v0.xyz + height * blade.up.xyz  * max(1.f - l_proj / height, 0.05f * max(l_proj / height, 1.f));
 
 	// correct the length
 	// L = 2L0 + (n - 1)L1 / (n + 1)
@@ -112,8 +128,46 @@ void UpdateBlade(inout Blade blade)
 	ValidateBlade(blade);
 }
 
+
+bool CullTest(const in Blade blade)
+{
+	const vec3 vec_dir = normalize(vec3(cos(blade.v0.w), 0.f, sin(blade.v0.w)));
+
+	// Orientation Test
+	vec3 forward = transpose(camera.view)[2].xyz;
+	forward.y = 0.f;
+	forward = normalize(forward);
+#if ENABLE_ORIENTATION_CULL
+	if(abs(dot(vec_dir, forward)) > OrientationThreshold ) return true;
+#endif
+	// View-Frustum Test
+	mat4 vp = camera.proj * camera.view;
+	vec4 v0_cam = camera.view * vec4(blade.v0.xyz, 1.f);
+	vec4 v0_ndc = camera.proj * v0_cam;
+	v0_ndc /= v0_ndc.w;
+	
+	vec4 v2_ndc = vp * vec4(blade.v2.xyz, 1.f);
+	v2_ndc /= v2_ndc.w;
+	
+	const vec3 m = 0.25f * (blade.v0.xyz + blade.v2.xyz) + 0.5f * blade.v1.xyz;
+	vec4 m_ndc = vp * vec4(m, 1.f);
+	m_ndc /= m_ndc.w;
+
+	const float h = .9f + ViewFrustrumThreshold;
+#if ENABLE_FRUSTRUM_CULL
+	if(!inBounds(v0_ndc.xyz, h) && !inBounds(v2_ndc.xyz, h) && !inBounds(m_ndc.xyz, h)) return true;
+#endif
+	// Distance Test
+	const vec3 up = (camera.view * vec4(blade.up.xyz, 0.f)).xyz;
+	const float d_proj = length(v0_cam.xyz - dot(v0_cam.xyz, up) * up);
+#if ENABLE_DISTANCE_CULL
+	if(gl_GlobalInvocationID.x % DistanceCullLevels > floor(float(DistanceCullLevels) * (1.f - d_proj / DistanceCullMax))) return true;
+#endif
+	return false;
+}
+
 void main() {
-	if(gl_GlobalInvocationID.x >= numBlades.vertexCount) return;
+	//if(gl_GlobalInvocationID.x >= numBlades.vertexCount) return;
 
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
@@ -127,15 +181,20 @@ void main() {
 	Blade blade = in_blades[index];
 
 	UpdateBlade(blade);
+	
+	
 
 	// For now, simply passthrough the compute shader
 	in_blades[index] = blade;
-	out_blades[index] = blade;
+	
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
+	// Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+	
+	
+	if(CullTest(blade)) return;
 
-	atomicAdd(numBlades.vertexCount, 1);
+	out_blades[atomicAdd(numBlades.vertexCount, 1)] = blade;
 }
