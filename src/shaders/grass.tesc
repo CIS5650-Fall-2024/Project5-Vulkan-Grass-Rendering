@@ -1,6 +1,11 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define minTessLevel 3.0
+#define maxTessLevel 10.0
+#define minDistance 1.0
+#define maxDistance 30.0
+
 layout(vertices = 1) out;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
@@ -29,11 +34,18 @@ void main() {
     v2_tese[gl_InvocationID] = v2_tesc[gl_InvocationID];
     up_tese[gl_InvocationID] = up_tesc[gl_InvocationID];
 
-	// TODO: Set level of tesselation
-    gl_TessLevelInner[0] = 9;
-    gl_TessLevelInner[1] = 9;
-    gl_TessLevelOuter[0] = 9;
-    gl_TessLevelOuter[1] = 9;
-    gl_TessLevelOuter[2] = 9;
-    gl_TessLevelOuter[3] = 9;
+	// Set level of tesselation
+    vec3 c = vec3(inverse(camera.view) * vec4(0, 0, 0, 1)); // position of camera
+    float d = length(c - gl_in[0].gl_Position.xyz);
+
+    float tessRange = maxTessLevel - minTessLevel;
+    float rDistRange = 1.0f / (maxDistance - minDistance);
+    float level = minTessLevel + tessRange * (1.0f - clamp((d - minDistance) * rDistRange, 0.0f, 1.0f));
+
+    gl_TessLevelInner[0] = 1.0f;
+    gl_TessLevelInner[1] = level;
+    gl_TessLevelOuter[0] = level;
+    gl_TessLevelOuter[1] = 1.0f;
+    gl_TessLevelOuter[2] = level;
+    gl_TessLevelOuter[3] = 1.0f;
 }

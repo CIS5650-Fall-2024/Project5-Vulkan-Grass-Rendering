@@ -21,8 +21,7 @@ void main() {
     float u = gl_TessCoord.x;
     float v = gl_TessCoord.y;
 
-	// TODO: Use u and v to parameterize along the grass blade and output positions for each vertex of the grass blade
-
+	// Use u and v to parameterize along the grass blade and output positions for each vertex of the grass blade
     vec3 v0 = v0_tese[0].xyz;
     vec3 v1 = v1_tese[0].xyz;
     vec3 v2 = v2_tese[0].xyz;

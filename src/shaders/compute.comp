@@ -2,6 +2,13 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define WORKGROUP_SIZE 32
+
+// test variables
+#define orientation_test_threshold 0.6
+#define view_frustum_test_tolerance 0.7
+#define distance_test_n 32
+#define distance_test_dmax 4.0
+
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
@@ -45,6 +52,12 @@ layout(set = 2, binding = 2) buffer NumBlades {
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
+}
+
+bool inViewFrustum(mat4 VP, vec3 p) {
+    vec4 p_prime = VP * vec4(p, 1.0f);
+    float h = p_prime.w + view_frustum_test_tolerance;
+    return inBounds(p_prime.x, h) && inBounds(p_prime.y, h) && inBounds(p_prime.z, h);
 }
 
 void main() {
@@ -116,6 +129,29 @@ void main() {
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
 
+    // Orientation test
+    vec3 dirb = t1; // vector along the width of the blade
+    vec3 dirc = vec3(normalize(camera.view * vec4(0, 0, 1, 0)));// view direction
+    if (abs(dot(dirc, dirb)) < orientation_test_threshold) {
+        return;
+    }
+
+    // View-frustum test
+    mat4 VP = camera.proj * camera.view;
+    vec3 midpoint = 0.25f * v0 + 0.5f * v1 + 0.25f * v2;
+    if (!inViewFrustum(VP, v0) || !inViewFrustum(VP, midpoint) || !inViewFrustum(VP, v2)) {
+		return;
+	}
+
+    // Distance test
+    vec3 c = vec3(inverse(camera.view) * vec4(0, 0, 0, 1)); // position of camera
+    float dproj = length(v0 - c - up * (v0 - c) * up);
+    if ((gl_GlobalInvocationID.x % distance_test_n) < floor(distance_test_n * (1.0f - dproj / distance_test_dmax))) {
+        return;
+    }
+
+    // Occlusion test
+    // TODO: Implement this test
 
     culledBlades[atomicAdd(numBlades.vertexCount, 1)] = blades[gl_GlobalInvocationID.x];
 }
