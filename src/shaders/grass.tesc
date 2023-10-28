@@ -30,10 +30,10 @@ void main() {
     up_tese[gl_InvocationID] = up_tesc[gl_InvocationID];
 
 	// TODO: Set level of tesselation
-    gl_TessLevelInner[0] = 5;
-    gl_TessLevelInner[1] = 5;
-    gl_TessLevelOuter[0] = 5;
-    gl_TessLevelOuter[1] = 5;
-    gl_TessLevelOuter[2] = 5;
-    gl_TessLevelOuter[3] = 5;
+    gl_TessLevelInner[0] = 9;
+    gl_TessLevelInner[1] = 9;
+    gl_TessLevelOuter[0] = 9;
+    gl_TessLevelOuter[1] = 9;
+    gl_TessLevelOuter[2] = 9;
+    gl_TessLevelOuter[3] = 9;
 }

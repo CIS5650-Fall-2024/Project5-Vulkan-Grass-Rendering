@@ -29,9 +29,9 @@ void main() {
     vec3 up = up_tese[0].xyz;
 
     float orientation = v0_tese[0].w;
-    float height = v1_tese[0].w;
+    //float height = v1_tese[0].w;
     float width = v2_tese[0].w;
-    float stiffness = up_tese[0].w;
+    //float stiffness = up_tese[0].w;
 
     // Bezier curve
     vec3 a = mix(v0, v1, v);
@@ -46,9 +46,9 @@ void main() {
 
     // Shape
     // float t = u + 0.5f * v - u * v; // triangle
-    float t = u - u * v * v; // quadratic
-    // float tau = 0.1f;
-    // float t = 0.5 + (u - 0.5) * (1.0f - max(v - tau, 0.0f) / (1.0f - tau));
+    // float t = u - u * v * v; // quadratic
+    float tau = 0.1f;
+    float t = 0.5 + (u - 0.5) * (1.0f - max(v - tau, 0.0f) / (1.0f - tau));
 
     fs_Nor = normalize(cross(t0, t1));
     fs_Pos = mix(c0, c1, t);

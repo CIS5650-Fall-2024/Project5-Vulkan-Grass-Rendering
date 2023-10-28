@@ -21,20 +21,27 @@ struct Blade {
     vec4 up;
 };
 
-// TODO: Add bindings to:
-// 1. Store the input blades
-// 2. Write out the culled blades
-// 3. Write the total number of blades remaining
+// Add bindings to:
 
+// 1. Store the input blades
+layout(set = 2, binding = 0) buffer Blades {
+	Blade blades[];
+};
+
+// 2. Write out the culled blades
+layout(set = 2, binding = 1) buffer CulledBlades {
+	Blade culledBlades[];
+};
+
+// 3. Write the total number of blades remaining
 // The project is using vkCmdDrawIndirect to use a buffer as the arguments for a draw call
 // This is sort of an advanced feature so we've showed you what this buffer should look like
-//
-// layout(set = ???, binding = ???) buffer NumBlades {
-// 	  uint vertexCount;   // Write the number of blades remaining here
-// 	  uint instanceCount; // = 1
-// 	  uint firstVertex;   // = 0
-// 	  uint firstInstance; // = 0
-// } numBlades;
+layout(set = 2, binding = 2) buffer NumBlades {
+	uint vertexCount;
+    uint instanceCount;
+    uint firstVertex;
+    uint firstInstance;
+} numBlades;
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
@@ -43,14 +50,72 @@ bool inBounds(float value, float bounds) {
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    // Extract value
+    Blade blade = blades[gl_GlobalInvocationID.x];
+    vec3 v0 = vec3(blade.v0);
+    vec3 v1 = vec3(blade.v1);
+    vec3 v2 = vec3(blade.v2);
+    vec3 up = vec3(blade.up);
+
+    float orientation = blade.v0.w;
+    float height =      blade.v1.w;
+    float width =       blade.v2.w;
+    float stiffness =   blade.up.w;
+
+    vec3 t1 = vec3(sin(orientation), 0, cos(orientation));
+
+    // Apply forces on every blade and update the vertices in the buffer
+
+    // Gravity
+    vec4 D = vec4(0.0f, -1.0f, 0.0f, 9.8f);
+    vec3 gE = normalize(D.xyz) * D.w;
+    vec3 f = normalize(cross(t1, up));
+    vec3 gF = 0.25f * length(gE) * f;
+    vec3 g = gE + gF;
+
+    // Recovery
+    vec3 iv2 = v0 + up * height;
+    vec3 r = (iv2 - v2) * stiffness;
+
+    // Wind
+    vec3 wi = vec3(0.5 * sin(totalTime), 0.0f, 0.5 * sin(totalTime));
+    float fd = 1.0f - abs(dot(normalize(wi), normalize(v2 - v0)));
+    float fr = dot(v2 - v0, up) / height;
+    float theta = fd * fr;
+    vec3 w = wi * theta;
+
+    // Determine final position for total force
+    vec3 tv2 = (g + r + w) * deltaTime;
+    v2 += tv2;
+    
+    // State validation
+    v2 -= up * min(dot(up, v2 - v0), 0.0f);
+    float lproj = length(v2 - v0 - up * dot(up, v2 - v0));
+    v1 = v0 + up * height * max(1.0f - lproj / height, 0.05f * max(lproj / height, 1.0f));
+
+    float L0 = length(v2 - v0);
+    float L1 = length(v1 - v0) + length(v2 - v1);
+    float L = (2.0f * L0 + L1) / 3.0f;
+
+    float ratio = height / L;
+    vec3 v1corr = v0 + ratio * (v1 - v0);
+    vec3 v2corr = v1corr + ratio * (v2 - v1);
+
+    v1 = v1corr;
+    v2 = v2corr;
+    blade.v1 = vec4(v1, height);
+    blade.v2 = vec4(v2, width);
+    blades[gl_GlobalInvocationID.x] = blade;
 
 	// TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+
+
+    culledBlades[atomicAdd(numBlades.vertexCount, 1)] = blades[gl_GlobalInvocationID.x];
 }

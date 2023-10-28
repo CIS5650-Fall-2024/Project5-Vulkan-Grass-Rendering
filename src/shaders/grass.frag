@@ -23,7 +23,7 @@ void main() {
 
     vec3 fs_LightVec = normalize(lightPos - fs_Pos);
     float diffuseTerm = clamp(dot(normalize(fs_Nor), fs_LightVec), 0.0, 1.0);
-    float ambientTerm = 0.7f;
+    float ambientTerm = 1.2f;
 
     // vec4 fs_HalfVec = normalize((fs_CameraPos - fs_Pos + fs_LightVec) / 2.f);
     // float specularTerm = max(pow(dot(fs_HalfVec, normalize(fs_Nor)), 20.0), 0.0);
