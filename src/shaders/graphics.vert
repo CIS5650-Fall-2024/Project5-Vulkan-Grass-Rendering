@@ -2,6 +2,8 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
+    vec4 fwd;
+    vec4 pos;
     mat4 view;
 	mat4 proj;
 } camera;

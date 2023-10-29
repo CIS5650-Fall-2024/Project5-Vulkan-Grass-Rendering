@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "Image.h"
+#include <iostream>
 
 Device* device;
 SwapChain* swapChain;
@@ -143,12 +144,30 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    float frameCnt = 0;
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
+        {
+            float cameraSpeed = 5.f;
+            if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_W) == GLFW_PRESS) {
+                camera->UpdatePosition(cameraSpeed * scene->time.deltaTime, 0);
+            }
+            if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_S) == GLFW_PRESS) {
+                camera->UpdatePosition(-cameraSpeed * scene->time.deltaTime, 0);
+            }
+            if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_A) == GLFW_PRESS) {
+                camera->UpdatePosition(0,-cameraSpeed * scene->time.deltaTime);
+            }
+            if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_D) == GLFW_PRESS) {
+                camera->UpdatePosition(0,cameraSpeed * scene->time.deltaTime);
+            }
+        }
+        ++frameCnt;
         renderer->Frame();
     }
-
+    std::cout << "time pass: " << scene->time.totalTime << std::endl;
+    std::cout << "avg fps: " << frameCnt / scene->time.totalTime << std::endl;
     vkDeviceWaitIdle(device->GetVkDevice());
 
     vkDestroyImage(device->GetVkDevice(), grassImage, nullptr);
@@ -163,5 +182,6 @@ int main() {
     delete device;
     delete instance;
     DestroyWindow();
+    system("pause");
     return 0;
 }

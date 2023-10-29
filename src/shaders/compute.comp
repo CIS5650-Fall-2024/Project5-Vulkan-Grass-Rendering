@@ -2,9 +2,16 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define WORKGROUP_SIZE 32
+#define DISTANCE_LEVEL 4
+#define MAX_DISTANCE 25.0
+#define GRASS_MASS 0.1
+#define WIND_FORCE 0.2
+
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
+	vec4 fwd;
+	vec4 pos;
     mat4 view;
     mat4 proj;
 } camera;
@@ -12,7 +19,7 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
 layout(set = 1, binding = 0) uniform Time {
     float deltaTime;
     float totalTime;
-};
+} time;
 
 struct Blade {
     vec4 v0;
@@ -28,22 +35,120 @@ struct Blade {
 
 // The project is using vkCmdDrawIndirect to use a buffer as the arguments for a draw call
 // This is sort of an advanced feature so we've showed you what this buffer should look like
-//
-// layout(set = ???, binding = ???) buffer NumBlades {
-// 	  uint vertexCount;   // Write the number of blades remaining here
-// 	  uint instanceCount; // = 1
-// 	  uint firstVertex;   // = 0
-// 	  uint firstInstance; // = 0
-// } numBlades;
+
+layout(set = 2, binding = 0) buffer Blades {
+	Blade blades[];	
+};
+
+layout(set = 2, binding = 1) buffer CulledBlades {
+	Blade culledBlades[];
+};
+
+layout(set = 2, binding = 2) buffer NumBlades {
+	uint vertexCount;   // Write the number of blades remaining here
+	uint instanceCount; // = 1
+	uint firstVertex;   // = 0
+	uint firstInstance; // = 0
+} numBlades;
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+// v0: the position of the grass blade on the geomtry
+// v1: a Bezier curve guide that is always "above" v0 with respect to the grass blade's up vector (explained soon)
+// v2: a physical guide for which we simulate forces on
+// v0.w holds orientation, v1.w holds height, v2.w holds width, and up.w holds the stiffness coefficient.
+bool orientationCull(Blade blade){
+	float orientation = blade.v0.w;
+	vec3 dirB = vec3(sin(orientation), 0, cos(orientation));
+	return abs(dot(dirB,camera.fwd.xyz)) > 0.9;
+}
+bool inFrustum(mat4 VP, vec4 pt){
+	vec4 clipPt = VP * pt;
+	float h = clipPt.w + 0.02;
+	clipPt.z = (clipPt.z - 0.5 * clipPt.w) * 2;//current glm::perspective z is 0-1
+	if(   
+		(!inBounds(clipPt.x,h))
+		||(!inBounds(clipPt.y,h))
+		||(!inBounds(clipPt.z,h))
+	){
+		return false;
+	}
+	return true;
+}
+bool frustumCull(Blade blade){
+	vec4 v0 = vec4(blade.v0.xyz,1);
+	vec4 v2 = vec4(blade.v2.xyz,1);
+	vec4 m = vec4(0.25*blade.v0.xyz * 0.5*blade.v1.xyz * 0.25*blade.v2.xyz,1);
+	mat4 VP = camera.proj * camera.view;
+	if(!inFrustum(VP,v0) && !inFrustum(VP,v2) && !inFrustum(VP,m)){
+		return true;
+	}
+	return false;
+}
+bool distanceCull(Blade blade, uint idx){
+	vec3 v0 = blade.v0.xyz;
+	vec3 c = camera.pos.xyz;
+	vec3 up = blade.up.xyz;
+	float dproj = length(v0 - c - up * dot(v0-c,up));
+	int cmp = int(floor(DISTANCE_LEVEL * (1.0 - (dproj/MAX_DISTANCE))));
+	return mod(idx, DISTANCE_LEVEL) > cmp;
+}
+
+void physicalSimulation(inout Blade blade){
+	vec3 v0 = blade.v0.xyz;
+	vec3 v1 = blade.v1.xyz;
+	vec3 v2 = blade.v2.xyz;
+	vec3 up = blade.up.xyz;
+	float s = blade.up.w;//stiffness
+	float h = blade.v1.w;
+	float orientation = blade.v0.w;
+	vec4 horizontal = vec4(sin(orientation), 0, cos(orientation), 0);//along width direction
+	vec3 f = cross(horizontal.xyz, vec3(0,1,0));
+
+	//float collsionStrength;
+	vec3 Iv2 = v0 + up*h;
+	vec3 r = (Iv2 - v2) * s * 0.1;
+	vec3 gE = vec3(0,-9.8,0) * GRASS_MASS;
+	vec3 gF = 0.25 * 9.8 * GRASS_MASS * f;
+	vec3 g = gE + gF;
+
+	vec3 wi = WIND_FORCE * vec3(1 + sin(time.totalTime + v0.x),0,0);//wi(v0)
+	float fd = dot(wi,wi) > 0 ?1 - abs(dot(normalize(wi),normalize(v2-v0))) : 1;
+	float fr = dot(v2 - v0,up)/h;
+	vec3 w = fd * fr * wi;
+
+	//apply force
+	vec3 segma = (r + g + w) * time.deltaTime;
+	v2 = v2 + segma;
+
+	v2 = v2 - up * min(dot(up,v2-v0),0);
+	float lproj = length(v2 - v0 - up*dot(v2-v0,up));
+	v1 = v0 + h * up * max(1 - lproj/h, 0.05 * max(lproj/h,1.0));
+
+	float L0 = distance(v0,v2);
+	float L1 = L0 + distance(v1,v2);
+	float L = (2*L0 + (2-1)*L1)/(2+1);
+	float rc = h/L;
+	vec3 v1c = v0 + rc * (v1 - v0);
+	v2 = v1c + rc *(v2 - v1);
+	v1 = v1c;
+
+	blade.v1 = vec4(v1, blade.v1.w);
+	blade.v2 = vec4(v2, blade.v2.w); 
+}
+
 void main() {
 	// Reset the number of blades to 0
+	uint threadInOneGroup = gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z;
+	uint groupOffset = 
+		gl_NumWorkGroups.x * gl_NumWorkGroups.y * gl_WorkGroupID.z
+		+ gl_NumWorkGroups.x * gl_WorkGroupID.y
+		+ gl_WorkGroupID.x;
+	uint idx = gl_LocalInvocationIndex + groupOffset * threadInOneGroup;
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
@@ -53,4 +158,17 @@ void main() {
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+	Blade currentBlade = blades[idx];
+	physicalSimulation(currentBlade);
+	blades[idx] = currentBlade;
+	bool culled = false
+	 || orientationCull(currentBlade)
+	 || frustumCull(currentBlade) 
+	 || distanceCull(currentBlade, idx)
+	 ;
+
+	if(!culled){
+		uint dstIdx = atomicAdd(numBlades.vertexCount,1);
+		culledBlades[dstIdx] = currentBlade; 
+	}
 }

@@ -5,8 +5,10 @@
 #include "Device.h"
 
 struct CameraBufferObject {
-  glm::mat4 viewMatrix;
-  glm::mat4 projectionMatrix;
+	glm::vec4 forward;//add
+    glm::vec4 position;
+	glm::mat4 viewMatrix;
+	glm::mat4 projectionMatrix;
 };
 
 class Camera {
@@ -21,7 +23,15 @@ private:
     void* mappedData;
 
     float r, theta, phi;
+    glm::vec3 eye;
+    glm::vec3 ref;
+    glm::vec3 forward;
+    glm::vec3 right;
+    glm::vec3 up;
+    glm::vec3 worldUp = glm::vec3(0,1, 0);
 
+    void updateAttrb();
+    glm::mat4 getViewMatrix();
 public:
     Camera(Device* device, float aspectRatio);
     ~Camera();
@@ -29,4 +39,5 @@ public:
     VkBuffer GetBuffer() const;
     
     void UpdateOrbit(float deltaX, float deltaY, float deltaZ);
+    void UpdatePosition(float fwd, float rt);
 };
