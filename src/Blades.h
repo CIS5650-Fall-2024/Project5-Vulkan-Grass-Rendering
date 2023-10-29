@@ -72,17 +72,17 @@ struct BladeDrawIndirect {
 class Blades : public Model {
 private:
     VkBuffer bladesBuffer;
-    VkBuffer culledBladesBuffer;
+    VkBuffer renderableBladesBuffer;
     VkBuffer numBladesBuffer;
 
     VkDeviceMemory bladesBufferMemory;
-    VkDeviceMemory culledBladesBufferMemory;
+    VkDeviceMemory renderableBladesBufferMemory;
     VkDeviceMemory numBladesBufferMemory;
 
 public:
     Blades(Device* device, VkCommandPool commandPool, float planeDim);
     VkBuffer GetBladesBuffer() const;
-    VkBuffer GetCulledBladesBuffer() const;
+    VkBuffer GetRenderableBladesBuffer() const;
     VkBuffer GetNumBladesBuffer() const;
     ~Blades();
 };

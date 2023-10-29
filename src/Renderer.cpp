@@ -459,10 +459,10 @@ void Renderer::CreateComputeDescriptorSets() {
         descriptorWrites[3 * i + 0].pImageInfo = nullptr;
         descriptorWrites[3 * i + 0].pTexelBufferView = nullptr;
 
-        VkDescriptorBufferInfo culledBladesBufferInfo = {};
-        culledBladesBufferInfo.buffer = scene->GetBlades()[i]->GetCulledBladesBuffer();
-        culledBladesBufferInfo.offset = 0;
-        culledBladesBufferInfo.range = NUM_BLADES * sizeof(Blade);
+        VkDescriptorBufferInfo renderableBladesBufferInfo = {};
+        renderableBladesBufferInfo.buffer = scene->GetBlades()[i]->GetRenderableBladesBuffer();
+        renderableBladesBufferInfo.offset = 0;
+        renderableBladesBufferInfo.range = NUM_BLADES * sizeof(Blade);
 
         descriptorWrites[3 * i + 1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[3 * i + 1].dstSet = computeDescriptorSets[i];
@@ -470,7 +470,7 @@ void Renderer::CreateComputeDescriptorSets() {
         descriptorWrites[3 * i + 1].dstArrayElement = 0;
         descriptorWrites[3 * i + 1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         descriptorWrites[3 * i + 1].descriptorCount = 1;
-        descriptorWrites[3 * i + 1].pBufferInfo = &culledBladesBufferInfo;
+        descriptorWrites[3 * i + 1].pBufferInfo = &renderableBladesBufferInfo;
         descriptorWrites[3 * i + 1].pImageInfo = nullptr;
         descriptorWrites[3 * i + 1].pTexelBufferView = nullptr;
 
@@ -1110,7 +1110,7 @@ void Renderer::RecordCommandBuffers() {
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, grassPipeline);
 
         for (uint32_t j = 0; j < scene->GetBlades().size(); ++j) {
-            VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetCulledBladesBuffer() };
+            VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetRenderableBladesBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 

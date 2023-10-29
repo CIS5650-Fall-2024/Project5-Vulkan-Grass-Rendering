@@ -46,7 +46,7 @@ Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) : Mode
 
     BufferUtils::CreateBufferFromData(device, commandPool, blades.data(), NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, bladesBuffer, bladesBufferMemory);
     // This one is also going to be drawn so we need to also flag it as vertex buffer bit
-    BufferUtils::CreateBuffer(device, NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, culledBladesBuffer, culledBladesBufferMemory);
+    BufferUtils::CreateBuffer(device, NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, renderableBladesBuffer, renderableBladesBufferMemory);
     BufferUtils::CreateBufferFromData(device, commandPool, &indirectDraw, sizeof(BladeDrawIndirect), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, numBladesBuffer, numBladesBufferMemory);
 }
 
@@ -54,8 +54,8 @@ VkBuffer Blades::GetBladesBuffer() const {
     return bladesBuffer;
 }
 
-VkBuffer Blades::GetCulledBladesBuffer() const {
-    return culledBladesBuffer;
+VkBuffer Blades::GetRenderableBladesBuffer() const {
+    return renderableBladesBuffer;
 }
 
 VkBuffer Blades::GetNumBladesBuffer() const {
@@ -65,8 +65,8 @@ VkBuffer Blades::GetNumBladesBuffer() const {
 Blades::~Blades() {
     vkDestroyBuffer(device->GetVkDevice(), bladesBuffer, nullptr);
     vkFreeMemory(device->GetVkDevice(), bladesBufferMemory, nullptr);
-    vkDestroyBuffer(device->GetVkDevice(), culledBladesBuffer, nullptr);
-    vkFreeMemory(device->GetVkDevice(), culledBladesBufferMemory, nullptr);
+    vkDestroyBuffer(device->GetVkDevice(), renderableBladesBuffer, nullptr);
+    vkFreeMemory(device->GetVkDevice(), renderableBladesBufferMemory, nullptr);
     vkDestroyBuffer(device->GetVkDevice(), numBladesBuffer, nullptr);
     vkFreeMemory(device->GetVkDevice(), numBladesBufferMemory, nullptr);
 }

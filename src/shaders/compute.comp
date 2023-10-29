@@ -21,17 +21,16 @@ struct Blade {
     vec4 up;
 };
 
-// TODO: Add bindings to:
-// 1. Store the input blades
+// 1. All blades
 
 layout(set = 2, binding = 0) buffer AllBlades
 {
     Blade allBlades[];
 };
-// 2. Write out the culled blades
-layout(set = 2, binding = 1) buffer CulledBlades
+// 2. Blades that are remaining after culling
+layout(set = 2, binding = 1) buffer RenderableBlades
 {
-    Blade culledBlades[];
+    Blade renderableBlades[];
 };
 // 3. Write the total number of blades remaining
 layout(set = 2, binding = 2) buffer NumBlades {
@@ -46,17 +45,22 @@ bool inBounds(float value, float bounds) {
 }
 
 void main() {
+    const uint currBladeIdx = gl_GlobalInvocationID.x;
+
 	// Reset the number of blades to 0
-	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+	if (currBladeIdx == 0) {
+//		 numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    Blade currBlade = allBlades[currBladeIdx];
+
+    // Apply forces on every blade and update the vertices in the buffer
 
 	// TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
-    culledBlades[gl_GlobalInvocationID.x] = allBlades[gl_GlobalInvocationID.x];
+//    uint idx = atomicAdd(numBlades.vertexCount, 1);
+    renderableBlades[gl_GlobalInvocationID.x] = currBlade;
 }
