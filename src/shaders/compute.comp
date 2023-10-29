@@ -42,12 +42,66 @@ layout(set = 2, binding = 2) buffer NumBlades {
 } numBlades;
 
 /* ==================== */
+/* ====== FORCES ====== */
+/* ==================== */
+
+float BLADE_MASS = 0.8f;
+vec3 GRAVITY_DIRECTION = vec3(0.0, 1.0, 0.0);
+float GRAVITY_ACCELERATION = -9.8f;
+#define PI_OVER_FOUR 0.785398163f
+
+vec3 getExternalForces(const vec3 v0, const vec3 v1, const vec3 v2, const vec3 up, vec3 bitangent,
+                       const float angle, const float width, const float height, const float stiffnessCoeff)
+{
+    // This is how we initialize v2 in Blades.cpp
+    // If we change that initialization this will have to be changed!
+    const vec3 initialV2 = v0 + height * up;
+
+    // Apply forces on every blade and update the vertices in the buffer
+    vec3 recoveryForce = (initialV2 - v2) * stiffnessCoeff;                                 // Hooke's Law
+    vec3 gravityEnvironmental = BLADE_MASS * GRAVITY_DIRECTION * GRAVITY_ACCELERATION;      // f = ma
+
+    vec3 front = normalize(vec3(cos(angle + 1.57079632679), 0.0f, sin(angle + 1.57079632679))); //normalize(cross(bitangent, up));
+    vec3 gravityFront = 0.25f * gravityEnvironmental * front;
+
+    vec3 gravity = gravityEnvironmental + 0 * gravityFront;
+
+    vec3 wind = vec3(3.0f + sin(totalTime) * 0.3, 0.0f, 0.0f);// vec3(sin(totalTime), cos(totalTime), -sin(totalTime)) * 3.0f;
+    vec3 totalForce = (recoveryForce + gravity + wind) * deltaTime;
+    return totalForce;
+}
+
+void validateState(const vec3 v0, inout vec3 v1, inout vec3 v2, const vec3 up, const float height)
+{
+    vec3 dir = v2 - v0;
+    float dotDirUp = dot(dir, up);
+    v2 = v2 - up * min(dotDirUp, 0);      // maintain v2 above ground plane level
+    float lProj = length(dir - up * dotDirUp);
+
+    float lProjOverHeight = lProj / height;
+    v1 = v0 + height * up * max(1.0 - lProjOverHeight, 0.05f * max(lProjOverHeight, 1.0f));
+    
+    float len1 = distance(v0, v1);
+    float len2 = distance(v1, v2);
+
+    // formula in paper is generalized L = (2 * len1 + (n-1) * sumAllLens) / (n+1)
+    // n is 3 in our case, so this simplifies to (2 * len1 + 2 * (len1 + len2)) / 4
+    // which simplifies to 2 * (len1 + len1 + len2) / 4 = (len1 + len1 + len2) / 2
+    float L = (len1 + len1 + len2) * 0.5f;
+    float r = height / L;
+
+    v1 = v0 + r * (v1 - v0);
+    v2 = v1 + r * (v2 - v1);
+}
+
+
+/* ==================== */
 /* ====== CULLING ===== */
 /* ==================== */
 
 #define ORIENTATION_CULLING 0
-#define FRUSTUM_CULLING 1
-#define DISTANCE_CULLING 1
+#define FRUSTUM_CULLING 0
+#define DISTANCE_CULLING 0
 
 #define ORIENTATION_CULLING_THRESHOLD 0.97
 #define FRUSTUM_CULLING_TOLERANCE -2
@@ -124,13 +178,30 @@ void main() {
 	}
 	barrier(); // Wait till all threads reach this point
 
+    // Parameters
     Blade currBlade = allBlades[currBladeIdx];
+    vec3 v0 = currBlade.v0.xyz;
+    vec3 v1 = currBlade.v1.xyz;
+    vec3 v2 = currBlade.v2.xyz;
+    const vec3 up = currBlade.up.xyz;
     const float angle = currBlade.v0.w;
-
-    // Apply forces on every blade and update the vertices in the buffer
+    const float height = currBlade.v1.w;
+    const float width = currBlade.v2.w;
+    const float stiffnessCoeff = currBlade.up.w;
     vec3 bitangent = normalize(vec3(cos(angle), 0.0f, sin(angle)));
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
+    // Get total force
+    vec3 totalForce = getExternalForces(v0, v1, v2, up, bitangent, angle, width, height, stiffnessCoeff);
+    v2 += totalForce;
+
+    // State validation (section 5.2 of paper)
+    validateState(v0, v1, v2, up, height);
+
+    currBlade.v1.xyz = v1;
+    currBlade.v2.xyz = v2;
+    allBlades[currBladeIdx] = currBlade;
+
+	// Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
