@@ -12,7 +12,8 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
 layout(set = 1, binding = 0) uniform Time {
     float deltaTime;
     float totalTime;
-};
+} time;
+
 
 struct Blade {
     vec4 v0;
@@ -26,31 +27,181 @@ struct Blade {
 // 2. Write out the culled blades
 // 3. Write the total number of blades remaining
 
+layout(std140, set = 2, binding = 0) buffer BladesOut {
+   Blade outdata[ ];
+};
+
+layout(std140, set = 2, binding = 1) buffer BladesIn {
+   Blade indata[ ];
+};
+
 // The project is using vkCmdDrawIndirect to use a buffer as the arguments for a draw call
 // This is sort of an advanced feature so we've showed you what this buffer should look like
 //
-// layout(set = ???, binding = ???) buffer NumBlades {
-// 	  uint vertexCount;   // Write the number of blades remaining here
-// 	  uint instanceCount; // = 1
-// 	  uint firstVertex;   // = 0
-// 	  uint firstInstance; // = 0
-// } numBlades;
+layout(std140, set = 2, binding = 2) buffer NumBlades {
+    uint vertexCount;   // Write the number of blades remaining here
+    uint instanceCount; // = 1
+    uint firstVertex;   // = 0
+    uint firstInstance; // = 0
+} numBlades;
+
+layout(push_constant) uniform PushConstants {
+    vec4 G;
+    vec4 wind_Params;
+    int numBlades;
+    float maxCullDist;
+    int numCullLevels;
+} pcs;
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+//Perlin noise from https://github.com/SuboptimalEng/shader-tutorials/blob/main/05-perlin-noise/shader.frag
+vec2 randomVecOnGrids(uvec2 corner)
+{
+    const float omega=0.1f;
+    vec2 grad=vec2(dot(corner, vec2(562.23f,734.58)),dot(corner, vec2(213.86f,456.12f)));
+    grad = sin(grad);
+    grad = grad*347892.0f+time.totalTime*pcs.wind_Params.x;
+    return sin(grad);
+}
+
+vec2 smoothCubic(vec2 x) {
+  return x * x * (3.0 - x * 2.0);
+}
+
+float perlin(vec2 xy)
+{
+    vec2 uv = fract(xy);
+    uvec2 cell = uvec2(xy-uv);
+    vec2 grad00 = randomVecOnGrids(cell+uvec2(0,0));
+    vec2 grad01 = randomVecOnGrids(cell+uvec2(0,1));
+    vec2 grad10 = randomVecOnGrids(cell+uvec2(1,0));
+    vec2 grad11 = randomVecOnGrids(cell+uvec2(1,1));
+
+    vec2 vecTo00 = uv + vec2(0.0, 0.0);
+    vec2 vecTo01 = uv + vec2(0.0, 1.0);
+    vec2 vecTo10 = uv + vec2(1.0, 0.0);
+    vec2 vecTo11 = uv + vec2(1.0, 1.0);
+
+    float dot00 = dot(vecTo00, grad00);
+    float dot01 = dot(vecTo01, grad01);
+    float dot10 = dot(vecTo10, grad10);
+    float dot11 = dot(vecTo11, grad11);
+
+    uv = smoothCubic(uv);
+    return mix(mix(dot00, dot01, uv.x), mix(dot10, dot11, uv.x), uv.y);
+}
+
+
+
+vec3 getWindInfluence(vec3 pos)
+{
+    const float frequency = pcs.wind_Params.y;
+    const float amplitude = pcs.wind_Params.z;
+    float windX = amplitude * perlin(vec2(pos.x * frequency, pos.z * frequency));
+    float windZ = amplitude * perlin(vec2((pos.x + pcs.wind_Params.w) * frequency, (pos.z + pcs.wind_Params.w) * frequency)); 
+    return vec3(windX,0,windZ);
+}
+
+float windFr(vec3 v2, vec3 v0, vec3 up, float h)
+{
+    return dot(v2-v0,up)/h;
+}
+
+float windFd(vec3 v2, vec3 v0)
+{
+    return 1-dot(normalize(getWindInfluence(v0)),normalize(v2-v0));
+}
+
+vec3 getWindForce(vec3 v2, vec3 v0, vec3 up, float h)
+{
+    return windFr(v2,v0,up,h)*windFd(v2,v0)*getWindInfluence(v0);
+}
+
+bool checkInViewFrustrum(vec3 x)
+{
+    vec4 clipPos = camera.proj * camera.view * vec4(x, 1.0f);
+    float hClip = clipPos.w+1e-2f;
+    return inBounds(clipPos.x,hClip)&&inBounds(clipPos.y,hClip)&&inBounds(clipPos.z,hClip);
+}
+
 void main() {
-	// Reset the number of blades to 0
-	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+    uint index = gl_GlobalInvocationID.x;
+    
+    if(index >= pcs.numBlades) return;
+
+    if (index == 0) {
+        numBlades.vertexCount = 0;
 	}
-	barrier(); // Wait till all threads reach this point
+	barrier();
+    Blade tmp = indata[index];
+    vec3 v0 = tmp.v0.xyz;
+    vec3 cv1 = tmp.v1.xyz;
+    vec3 cv2 = tmp.v2.xyz;
+    vec3 up = tmp.up.xyz;
+    float stiffness = tmp.up.w;
+    float h = tmp.v1.w;
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    //Apply Forces
+    vec3 gE = normalize(pcs.G.xyz)*pcs.G.w;
+    float angle = tmp.v0.w;
+    vec3 side = vec3(cos(angle),0.0,sin(angle));
+    vec3 front = cross(up, side);
+    vec3 gF = 0.25*length(gE)*front;
+    vec3 G = gE+gF;
+    
+    vec3 iv2 = v0+up*h;
+    vec3 R = (iv2-cv2)*stiffness;
+    vec3 W = getWindForce(cv2,v0,up,h);
+    vec3 tv2 = (R+W+G)*time.deltaTime;
+    //vec3 tv2 = vec3(0.0f);
+    vec3 nv2 = cv2+tv2;
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
-	// to the culled blades buffer
-	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
-	// You want to write the visible blades to the buffer without write conflicts between threads
+    //Validation
+    nv2 = nv2 - tmp.up.xyz*min(0,dot(up,nv2-v0));
+    float lproj = length(nv2-v0-up*dot(up,nv2-v0));
+    vec3 nv1 = v0 + h*up*max(1-lproj/h,0.05*max(lproj/h,1));
+    float L1 = length(v0-nv1)+length(nv1-nv2);
+    float L0 = length(v0-nv2);
+    float L = (2*L0+L1)/3.0;
+    float r = h/max(L,1e-3f);
+    vec3 cnv1 = v0+r*(nv1-v0);
+    vec3 cnv2 = cnv1+r*(nv2-nv1);
+
+    //Update data
+    indata[index].v2.xyz = cnv2;
+    indata[index].v1.xyz = cnv1;
+
+	//Culling
+    bool culled = false;
+    vec3 dirc = normalize(vec3(camera.view * vec4(side,0.0f)));
+    vec3 dirb = normalize(vec3(camera.view * vec4(v0,1.0f)));
+    culled = culled || (abs(dot(dirc,dirb))>0.9f?true:false);
+
+    vec3 m = 0.25*v0+0.5*cnv1+0.25*cnv2;
+    bool inViewFrustrum = checkInViewFrustrum(v0)||checkInViewFrustrum(m)||checkInViewFrustrum(cnv2);
+    culled = culled || (!inViewFrustrum);
+
+    vec3 posCamSpace = vec3(camera.view*vec4(v0,1.0f));
+    vec3 upCamSpace = vec3(camera.view*vec4(up,0.0f));
+    vec3 viewLeft = cross(upCamSpace,posCamSpace);
+    vec3 viewFront = normalize(cross(viewLeft, upCamSpace));
+    float dproj = dot(viewFront, posCamSpace);
+    int n=pcs.numCullLevels;
+    if((index%n)>floor(n*(1-dproj/pcs.maxCullDist))) culled = true;
+    
+    if(!culled)
+    {
+        uint nIdx = atomicAdd(numBlades.vertexCount, 1);
+        outdata[nIdx] = indata[index];
+    }
+    
+
+    /*
+    outdata[index] = indata[index];
+    if (index == 0) {
+		 numBlades.vertexCount = pcs.numBlades;
+	}*/
 }

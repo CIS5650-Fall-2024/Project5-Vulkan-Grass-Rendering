@@ -1,4 +1,5 @@
 #include <vulkan/vulkan.h>
+#include <iostream>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
@@ -10,6 +11,9 @@ Device* device;
 SwapChain* swapChain;
 Renderer* renderer;
 Camera* camera;
+const int window_width = 800;
+const int window_height = 800;
+
 
 namespace {
     void resizeCallback(GLFWwindow* window, int width, int height) {
@@ -67,7 +71,7 @@ namespace {
 
 int main() {
     static constexpr char* applicationName = "Vulkan Grass Rendering";
-    InitializeWindow(640, 480, applicationName);
+    InitializeWindow(window_width, window_height, applicationName);
 
     unsigned int glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -90,7 +94,7 @@ int main() {
 
     swapChain = device->CreateSwapChain(surface, 5);
 
-    camera = new Camera(device, 640.f / 480.f);
+    camera = new Camera(device, window_width * 1.0f / window_height);
 
     VkCommandPoolCreateInfo transferPoolInfo = {};
     transferPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -153,15 +157,18 @@ int main() {
 
     vkDestroyImage(device->GetVkDevice(), grassImage, nullptr);
     vkFreeMemory(device->GetVkDevice(), grassImageMemory, nullptr);
-
+    
     delete scene;
     delete plane;
     delete blades;
     delete camera;
     delete renderer;
     delete swapChain;
+    vkDestroySurfaceKHR(instance->GetVkInstance(), surface, nullptr);
+    DestroyWindow();
     delete device;
     delete instance;
-    DestroyWindow();
+    std::cout << "Press any key to exit..." << std::endl;
+    getchar();
     return 0;
 }
