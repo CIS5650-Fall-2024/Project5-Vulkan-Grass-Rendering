@@ -7,6 +7,7 @@ layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 layout(set = 1, binding = 0) uniform Time {
@@ -45,13 +46,16 @@ layout(set = 2, binding = 2) buffer NumBlades {
 /* ==================== */
 
 #define ORIENTATION_CULLING 0
-#define ORIENTATION_CULLING_THRESHOLD 0.97
 #define FRUSTUM_CULLING 1
+#define DISTANCE_CULLING 1
+
+#define ORIENTATION_CULLING_THRESHOLD 0.97
 #define FRUSTUM_CULLING_TOLERANCE -2
 #define FRUSTUM_NEAR_CLIP 0.5
 #define FRUSTUM_FAR_CLIP 15        // this is also the "max distance" in distance culling.
+#define DISTANCE_CULLING_BUCKETS 4
 
-bool shouldOrientationCull(const Blade blade, const vec3 bitangent)
+bool shouldOrientationCull(const vec3 bitangent)
 {
     vec3 viewDir = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
     if (abs(dot(viewDir, bitangent)) > ORIENTATION_CULLING_THRESHOLD)
@@ -74,31 +78,35 @@ bool isPtInsideFrustum(vec3 p)
     return inBounds(pDash.x, h) && inBounds(pDash.y, h) && pDash.z > FRUSTUM_NEAR_CLIP && pDash.z < FRUSTUM_FAR_CLIP;
 }
 
-bool shouldFrustrumCull(const Blade blade, const vec3 v0, const vec3 v1, const vec3 v2)
+bool shouldFrustrumCull(const vec3 v0, const vec3 v1, const vec3 v2)
 {
     vec3 midPt = 0.25f * v0 + 0.5f * v1 + 0.25f * v2;
     return !isPtInsideFrustum(v0) && !isPtInsideFrustum(midPt) && !isPtInsideFrustum(v2);
 }
 
-bool shouldDistanceCull(const Blade blade)
+bool shouldDistanceCull(const uint idx, const vec3 v0, const vec3 up)
 {
-    return false;
+    vec3 c = camera.invView[3].xyz;
+    vec3 dir = v0 - c;
+    float dProj = length(dir - up * dot(dir, up));
+    return dProj > FRUSTUM_FAR_CLIP;
+    return idx % DISTANCE_CULLING_BUCKETS < floor(DISTANCE_CULLING_BUCKETS * (1.0f - dProj / FRUSTUM_FAR_CLIP));
 }
 
-bool shouldCull(const Blade blade, const vec3 bitangent, const vec3 v0, const vec3 v1, const vec3 v2)
+bool shouldCull(const uint idx, const vec3 bitangent, const vec3 v0, const vec3 v1, const vec3 v2, const vec3 up)
 {
     bool shouldCull = false;
 
     #if ORIENTATION_CULLING
-    shouldCull = shouldCull || shouldOrientationCull(blade, bitangent);
+    shouldCull = shouldCull || shouldOrientationCull(bitangent);
     #endif
 
     #if FRUSTUM_CULLING
-    shouldCull = shouldCull || shouldFrustrumCull(blade, v0, v1, v2);
+    shouldCull = shouldCull || shouldFrustrumCull(v0, v1, v2);
     #endif
 
     #if DISTANCE_CULLING
-    shouldCull = shouldCull || shouldDistanceCull(blade);
+    shouldCull = shouldCull || shouldDistanceCull(idx, v0, up);
     #endif
 
     return shouldCull;
@@ -128,7 +136,7 @@ void main() {
 	// You want to write the visible blades to the buffer without write conflicts between threads
 
     // Cull blades
-    if (shouldCull(currBlade, bitangent, v0, v1, v2))
+    if (shouldCull(currBladeIdx, bitangent, v0, v1, v2, up))
     {
         return;
     }

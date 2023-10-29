@@ -5,6 +5,7 @@
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 layout(set = 1, binding = 0) uniform ModelBufferObject {

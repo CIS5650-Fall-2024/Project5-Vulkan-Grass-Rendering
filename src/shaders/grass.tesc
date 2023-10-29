@@ -6,6 +6,7 @@ layout(vertices = 1) out;
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 // Declare tessellation control shader inputs and outputs
@@ -31,7 +32,7 @@ void main() {
     tes_v2[gl_InvocationID] = tcs_v2[gl_InvocationID];
     tes_up[gl_InvocationID] = tcs_up[gl_InvocationID];
 
-    int tesselationLevel = 4;
+    int tesselationLevel = 8;
 
 	// Set level of tesselation
      gl_TessLevelInner[0] = tesselationLevel;

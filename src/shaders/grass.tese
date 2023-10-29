@@ -6,6 +6,7 @@ layout(triangles, equal_spacing, ccw) in;
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 // Declare tessellation evaluation shader inputs and outputs
