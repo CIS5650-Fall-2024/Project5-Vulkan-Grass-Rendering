@@ -33,6 +33,9 @@ public:
     Scene(Device* device);
     ~Scene();
 
+    float gettime(){return time.totalTime;};
+    float getDeltatime(){return time.deltaTime;};
+
     const std::vector<Model*>& GetModels() const;
     const std::vector<Blades*>& GetBlades() const;
     

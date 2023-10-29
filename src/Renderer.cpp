@@ -1177,6 +1177,11 @@ void Renderer::Frame() {
     if (!swapChain->Present()) {
         RecreateFrameResources();
     }
+    framecount++;
+    if(framecount%1000==0){
+        printf("FPS: %f \n", 1.0f/scene->getDeltatime());
+    }
+    
 }
 
 Renderer::~Renderer() {

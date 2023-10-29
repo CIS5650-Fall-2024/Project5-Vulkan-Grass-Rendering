@@ -17,6 +17,6 @@ vec3 lightpos=vec3(10.0f,10.0f,10.0f);
 void main() {
     // TODO: Compute fragment color
     float mag=abs(dot(normalize(lightpos-in_pos),in_normal));
-    mag=min(1.0f,mag+0.3f);
-    outColor = mag*vec4(0.24f,0.75f,0.0f,1.0f);
+    mag=clamp(mag+0.3f,0.0f,1.0f);
+    outColor = mag*vec4(0.1f,0.54f,0.0f,1.0f);
 }

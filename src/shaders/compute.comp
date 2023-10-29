@@ -7,11 +7,13 @@
 #define TOLERANCE 0.01f;
 
 vec4 D=vec4(0.0f,-1.0f,0.0f,9.8f);
-vec3 WIND_DIRECTION=vec3(-0.9f,-0.1f,0.0f);
+vec3 WIND_DIRECTION=vec3(-0.9f,0.0f,0.0f);
 float WIND_WAVE_FREQUENCY=1.0f;
-float WIND_MAGNIFIER=2.0f;
+float WIND_MAGNIFIER=5.0f;
 float DISTANCE_MAX_CULL=15.0f;
 float DISTANCE_NUM_CULL=15;
+float GRASS_MASS=0.9f;
+float COLLISIONSTRENGTH=0.9f;
 
 bool orientationcull=true;
 bool frustumcull=true;
@@ -65,7 +67,7 @@ bool inBounds(float value, float bounds) {
 }
 
 vec3 wind(vec3 invec,float time){
-    float mag=sin(time*WIND_WAVE_FREQUENCY);
+    float mag=sin(mod(time*WIND_WAVE_FREQUENCY,6.28f))+1.0f;
     return mag*WIND_MAGNIFIER*WIND_DIRECTION;
     //return vec3(0.0f);
 }
@@ -97,25 +99,27 @@ void main() {
 
     // TODO: Apply forces on every blade and update the vertices in the buffer
     // gravity
-    vec3 gE = normalize(D.xyz) * D.w;
+    vec3 gE = GRASS_MASS*normalize(D.xyz) * D.w;
     vec3 gF = 0.25f * length(gE) * f;
     vec3 gravity = gE + gF;
 
     // recovery
     vec3 iv2 = v0 + up * height;
-    vec3 recovery = (iv2 - v2) * stiffness;
+    vec3 recovery = (iv2 - v2) * stiffness*COLLISIONSTRENGTH;
 
     // wind
-    float f_d=1.0f-abs(dot(normalize(wind(v0,totalTime)),normalize(v2-v0)));
+    vec3 winddir=wind(v0,totalTime);
+    float f_d=1.0f-abs(dot(normalize(winddir),normalize(v2-v0)));
     float f_r=dot(v2-v0,up)/height;
     float theta=f_d*f_r;
-    vec3 windforce=wind(v0,totalTime)*theta;
+    vec3 windforce=winddir*theta;
 
     // total force
-    //vec3 tv2 = (gravity + recovery + windforce) * deltaTime;
-    vec3 tv2=vec3(0.0f);
+    vec3 tv2 = (gravity+recovery+windforce) * deltaTime;
+    //vec3 tv2=vec3(0.0f);
     v2 += tv2;
     v2 = v2-up*min(dot(up,v2-v0),0.0f);
+    //blades.in_blades[gl_GlobalInvocationID.x].v2.xyz=v2.xyz;
 
     // state validation
     float l_proj = length(v2 - v0 - up * dot((v2 - v0), up));
@@ -126,7 +130,7 @@ void main() {
     float n = 2;
     float L = (2*L0+(n-1)*L1)/(n+1);
     float r =height/L;
-
+    
     v1 = v0 + r * (v1 - v0);
     v2 = v1 + r * (v2 - v1);
     blades.in_blades[gl_GlobalInvocationID.x].v1.xyz=v1.xyz;

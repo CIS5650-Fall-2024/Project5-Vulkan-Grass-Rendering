@@ -47,6 +47,7 @@ private:
     SwapChain* swapChain;
     Scene* scene;
     Camera* camera;
+    long int framecount;
 
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
