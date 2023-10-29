@@ -9,27 +9,30 @@ Vulkan Grass Rendering
 
 
 ### Result & Features
-![](result.gif)
+![](./img/result.gif)
 
 Features: 
 - culling test
   - orientation culling test
-    ![](result1.gif)
+    ![](./img/result1.gif)
   - view frustum culling test
-    ![](result2.gif)
+    ![](./img/result2.gif)
   - distance culling test
-    ![](result3.gif)
+    ![](./img/result3.gif)
 - physics simulation (no force shown below)
-  ![](result4.gif)
+  ![](./img/result4.gif)
   - gravity force
-    ![](result5.gif)
+    ![](./img/result5.gif)
   - recovery force (with gravity)
-    ![](result6.gif)
+    ![](./img/result6.gif)
   - wind force (with gravity and wind)
-    ![](result.gif)
+    ![](./img/result.gif)
 
 ### Performance & Analysis
 
+![](./img/analysis1.png)
 The FPS descreases as the blades counts become higher, especially when it reaches around 2^15. However, it roughly stays the same for low blades count (since threads count might be larger than blades count).
 
+
+![](./img/analysis2.png)
 The FPS get increased for all culling method individually. (culling test on same view with same blade count). Distance culling gives better performance improvement for this certain view compared to the other twos. All together, it gives best performance improvement.
