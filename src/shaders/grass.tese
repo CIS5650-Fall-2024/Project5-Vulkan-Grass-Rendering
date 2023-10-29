@@ -42,7 +42,6 @@ float getTriTipT(const float u, const float v)
 void main() {
     float u = gl_TessCoord.x;
     float v = gl_TessCoord.y;
-        gl_Position = camera.proj * camera.view * gl_in[0].gl_Position;
     
     // first element of arrays because we only have 1 vertex in patch!
     vec3 v0 = gl_in[0].gl_Position.xyz;
@@ -59,7 +58,7 @@ void main() {
     vec3 b = v1 + v * (v2 - v1);
     vec3 c = a + v * (b - a);
 
-    vec3 t1 = vec3(1,0,0);//vec3(cos(angle), 0.0f, sin(angle));     // fast matrix multiplication for y rotation of vec3.right (1,0,0)
+    vec3 t1 = normalize(vec3(cos(angle), 0.0f, sin(angle)));     // fast matrix multiplication for y rotation of vec3.right (1,0,0)
     vec3 c0 = c - width * t1;
     vec3 c1 = c + width * t1;
 

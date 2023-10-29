@@ -26,8 +26,7 @@ out gl_PerVertex {
 
 void main() {
     // position of blade is v0
-    gl_Position = vec4(vec3(camera.proj * camera.view * model * vec4(vs_v0.xyz, 1.0)), vs_v0.w);
-    gl_Position = model * vec4(vs_v0.xyz, 1.0);
+    gl_Position = vec4(vec3(model * vec4(vs_v0.xyz, 1.0)), vs_v0.w);
 
     tcs_v1 = vec4(vec3(model * vec4(vs_v1.xyz, 1.0)), vs_v1.w);
     tcs_v2 = vec4(vec3(model * vec4(vs_v2.xyz, 1.0)), vs_v2.w);
