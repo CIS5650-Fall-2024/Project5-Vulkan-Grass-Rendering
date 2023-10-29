@@ -28,7 +28,7 @@ void main() {
     float orit = v0[0].w;
     float w = v2[0].w;
     
-    vec3 t1=vec3(-cos(orit), 0, sin(orit));
+    vec3 t1=vec3(cos(orit), 0, sin(orit));
     vec3 a = mix(ver0, ver1, v);
     vec3 b = mix(ver1, ver2, v);
     vec3 c = mix(a, b, v);

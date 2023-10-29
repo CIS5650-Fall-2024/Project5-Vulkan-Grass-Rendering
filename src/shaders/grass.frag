@@ -12,8 +12,11 @@ layout(location = 1) in vec3 in_pos;
 
 layout(location = 0) out vec4 outColor;
 
+vec3 lightpos=vec3(10.0f,10.0f,10.0f);
+
 void main() {
     // TODO: Compute fragment color
-
-    outColor = vec4(1.0);
+    float mag=abs(dot(normalize(lightpos-in_pos),in_normal));
+    mag=min(1.0f,mag+0.3f);
+    outColor = mag*vec4(0.24f,0.75f,0.0f,1.0f);
 }
