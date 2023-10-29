@@ -10,12 +10,10 @@ layout(set = 1, binding = 0) uniform ModelBufferObject {
 layout(location = 0) in vec4 inV0;
 layout(location = 1) in vec4 inV1;
 layout(location = 2) in vec4 inV2;
-layout(location = 3) in vec4 inUp;
 
 layout(location = 0) out vec4 outV0;
 layout(location = 1) out vec4 outV1;
 layout(location = 2) out vec4 outV2;
-layout(location = 3) out vec4 outUp;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -30,6 +28,4 @@ void main() {
     outV1.w = inV1.w;
     outV2 = model * vec4(inV2.xyz, 1.0);
     outV2.w = inV2.w;
-    outUp = model * vec4(inUp.xyz, 0.0);
-    outUp.w = inUp.w;
 }

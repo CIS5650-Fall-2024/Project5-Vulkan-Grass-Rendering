@@ -13,7 +13,7 @@ layout(location = 1) in vec3 inNor;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    // TODO: Compute fragment color
+    // DONE: Compute fragment color
     vec3 albedo = vec3(0.1, 0.8, 0.1);
     vec3 ambient = vec3(0.1, 0.3, 0.1);
     vec3 lightPos = vec3(10.0, 20.0, 10.0);

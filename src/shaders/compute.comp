@@ -21,7 +21,7 @@ struct Blade {
     vec4 up;
 };
 
-// TODO: Add bindings to:
+// DONE: Add bindings to:
 // 1. Store the input blades
 layout(set = 2, binding = 0) buffer InputBlades {
     Blade inputBlades[];
@@ -46,6 +46,12 @@ bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+bool inFrustum(vec3 p) {
+    vec4 p_prime = camera.view * camera.proj * vec4(p, 1.0);
+    float h = p_prime.w + 0.2;
+    return inBounds(p_prime.x, h) && inBounds(p_prime.y, h) && inBounds(p_prime.z, h);
+}
+
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
@@ -53,28 +59,28 @@ void main() {
 	}
 	barrier(); // Wait till all threads reach this point
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    // DONE: Apply forces on every blade and update the vertices in the buffer
     Blade blade = inputBlades[gl_GlobalInvocationID.x];
     vec3 v0 = blade.v0.xyz;
     vec3 v1 = blade.v1.xyz;
     vec3 v2 = blade.v2.xyz;
     vec3 up = blade.up.xyz;
-    float orientation = b.v0.w;
-    float height = b.v1.w;
-    float width = b.v2.w;
-    float stiffness = b.up.w;
+    float orientation = blade.v0.w;
+    float height = blade.v1.w;
+    float width = blade.v2.w;
+    float stiffness = blade.up.w;
     vec3 direction = vec3(cos(orientation), 0.0, sin(orientation));
 
     vec3 totalForce = vec3(0.0);
     // gravity
-    vec3 gE(0.0, -9.8, 0.0);
+    vec3 gE = vec3(0.0, -9.8, 0.0);
     vec3 gF = 0.25 * 9.8 * normalize(cross(direction, up));
     totalForce += (gE + gF);
     // recovery
-    vec3 r = (v0 + up * height - v2) * stiffness;
-    totalForce += r;
+    vec3 re = (v0 + up * height - v2) * stiffness;
+    totalForce += re;
     // wind
-    vec3 wi = normalize(vec3(cos(3.14 * t) + sin(2.71 * t), 0.0, cos(2.71 * t) + sin(3.14 * t))) * length(v0);
+    vec3 wi = normalize(vec3(cos(3.14 * totalTime) + sin(2.71 * totalTime), 0.0, cos(2.71 * totalTime) + sin(3.14 * totalTime))) * length(v0);
     float fd = 1 - abs(dot(normalize(wi), normalize(v2 - v0)));
     float fr = dot(v2 - v0, up) / height;
     vec3 w = wi * fd * fr;
@@ -82,8 +88,8 @@ void main() {
 
     v2 += totalForce * deltaTime;
     v2 = v2 - up * min(dot(up, v2 - v0), 0.0);
-    float lproj = length(v2 - v0 - up * dot(v2 - v0, up));
-    v1 = v0 + height * up * max(1 - lproj / height, 0.05 * max(lproj / height, 1.0));
+    float l_proj = length(v2 - v0 - up * dot(v2 - v0, up));
+    v1 = v0 + height * up * max(1 - l_proj / height, 0.05 * max(l_proj / height, 1.0));
     float L0 = length(v2 - v0);
     float L1 = length(v2 - v0) + length(v1 - v0);
     float L = (L0 + L1) / 2;
@@ -95,8 +101,20 @@ void main() {
     blade.v2.xyz = v2corr;
     inputBlades[gl_GlobalInvocationID.x] = blade;
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
+	// DONE: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+    vec3 camPos = inverse(camera.view)[3].xyz;
+    // orientation test
+    vec3 directionCam = camPos - v0;
+    if(abs(dot(normalize(directionCam), direction)) > 0.9) return;
+    // view-frustum test
+    vec3 m = 0.25 * v0 + 0.5 * v1 + 0.25 * v2;
+    if(!inFrustum(v0) && !inFrustum(v2) && !inFrustum(m)) return;
+    // distance test
+    float d_proj = length(v0 - camPos - up * dot(v0 - camPos, up));
+    if(mod(gl_GlobalInvocationID.x, 10) >= floor(10 * (1 - d_proj / 60.0))) return;
+
+    culledBlades[atomicAdd(numBlades.vertexCount, 1)] = blade;
 }
