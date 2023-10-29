@@ -21,6 +21,14 @@ struct Blade {
     vec4 up;
 };
 
+layout(set = 2, binding = 0) buffer Blades {
+	Blade in_blades[];
+} blades;
+
+layout(set = 2, binding = 1) buffer culledBlades {
+	Blade in_blades[];
+} cblades;
+
 // TODO: Add bindings to:
 // 1. Store the input blades
 // 2. Write out the culled blades
@@ -29,12 +37,13 @@ struct Blade {
 // The project is using vkCmdDrawIndirect to use a buffer as the arguments for a draw call
 // This is sort of an advanced feature so we've showed you what this buffer should look like
 //
-// layout(set = ???, binding = ???) buffer NumBlades {
-// 	  uint vertexCount;   // Write the number of blades remaining here
-// 	  uint instanceCount; // = 1
-// 	  uint firstVertex;   // = 0
-// 	  uint firstInstance; // = 0
-// } numBlades;
+
+layout(set = 2, binding = 2) buffer NumBlades {
+ 	uint vertexCount;   
+    uint instanceCount; 
+    uint firstVertex;   
+    uint firstInstance; 
+} numBlades;
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
@@ -43,14 +52,28 @@ bool inBounds(float value, float bounds) {
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    Blade blade = blades.in_blades[gl_GlobalInvocationID.x];
 
+    vec3 v0=blade.v0.xyz;
+    vec3 v1=blade.v1.xyz;
+    vec3 v2=blade.v2.xyz;
+    vec3 up=blade.up.xyz;
+    float orit = blade.v0.w;
+    float height = blade.v1.w;
+    float width = blade.v2.w;
+    float stiffness = blade.up.w;
+    
+    // TODO: Apply forces on every blade and update the vertices in the buffer
+    
 	// TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
+    
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+
+    cblades.in_blades[atomicAdd(numBlades.vertexCount, 1)] = blades.in_blades[gl_GlobalInvocationID.x];
 }
