@@ -90,3 +90,11 @@ void BufferUtils::CreateBufferFromData(Device* device, VkCommandPool commandPool
     vkDestroyBuffer(device->GetVkDevice(), stagingBuffer, nullptr);
     vkFreeMemory(device->GetVkDevice(), stagingBufferMemory, nullptr);
 }
+
+void BufferUtils::CopyToHostVisibleMemory(Device* device, void* srcData, VkDeviceMemory dstMemory, VkDeviceSize size)
+{
+    void* data;
+    vkMapMemory(device->GetVkDevice(), dstMemory, 0, size, 0, &data);
+    memcpy(data, srcData, static_cast<size_t>(size));
+    vkUnmapMemory(device->GetVkDevice(), dstMemory);
+}

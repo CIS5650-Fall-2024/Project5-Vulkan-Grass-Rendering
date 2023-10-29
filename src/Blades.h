@@ -4,7 +4,7 @@
 #include <array>
 #include "Model.h"
 
-constexpr static unsigned int NUM_BLADES = 1 << 13;
+constexpr static unsigned int NUM_BLADES = 1 << 10;
 constexpr static float MIN_HEIGHT = 1.3f;
 constexpr static float MAX_HEIGHT = 2.5f;
 constexpr static float MIN_WIDTH = 0.1f;
@@ -69,6 +69,14 @@ struct BladeDrawIndirect {
     uint32_t firstInstance;
 };
 
+struct ComputePushConstant {
+    alignas(16) glm::vec4 G;
+    alignas(16) glm::vec4 wind_Params;//time frequency, position freq, 
+    alignas(16) int numBlades;
+    alignas(16) float maxCullDist;
+    alignas(16) int numCullLevels;
+};
+
 class Blades : public Model {
 private:
     VkBuffer bladesBuffer;
@@ -84,5 +92,6 @@ public:
     VkBuffer GetBladesBuffer() const;
     VkBuffer GetCulledBladesBuffer() const;
     VkBuffer GetNumBladesBuffer() const;
+    VkDeviceMemory GetNumBladesMemory() const;
     ~Blades();
 };
