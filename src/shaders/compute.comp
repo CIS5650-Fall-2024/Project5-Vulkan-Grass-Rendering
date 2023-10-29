@@ -1,9 +1,6 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-#define ORIENTATION_CULLING 1
-#define ORIENTATION_CULLING_THRESHOLD 0.97
-
 #define WORKGROUP_SIZE 32
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -43,10 +40,73 @@ layout(set = 2, binding = 2) buffer NumBlades {
  	  uint firstInstance; // = 0
 } numBlades;
 
+/* ==================== */
+/* ====== CULLING ===== */
+/* ==================== */
+
+#define ORIENTATION_CULLING 0
+#define ORIENTATION_CULLING_THRESHOLD 0.97
+#define FRUSTUM_CULLING 1
+#define FRUSTUM_CULLING_TOLERANCE -2
+#define FRUSTUM_NEAR_CLIP 0.5
+#define FRUSTUM_FAR_CLIP 15        // this is also the "max distance" in distance culling.
+
+bool shouldOrientationCull(const Blade blade, const vec3 bitangent)
+{
+    vec3 viewDir = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
+    if (abs(dot(viewDir, bitangent)) > ORIENTATION_CULLING_THRESHOLD)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+bool isPtInsideFrustum(vec3 p)
+{
+    vec4 pDash = camera.proj * camera.view * vec4(p, 1.0f);
+    float h = pDash.w + FRUSTUM_CULLING_TOLERANCE;
+
+    return inBounds(pDash.x, h) && inBounds(pDash.y, h) && pDash.z > FRUSTUM_NEAR_CLIP && pDash.z < FRUSTUM_FAR_CLIP;
+}
+
+bool shouldFrustrumCull(const Blade blade, const vec3 v0, const vec3 v1, const vec3 v2)
+{
+    vec3 midPt = 0.25f * v0 + 0.5f * v1 + 0.25f * v2;
+    return !isPtInsideFrustum(v0) && !isPtInsideFrustum(midPt) && !isPtInsideFrustum(v2);
+}
+
+bool shouldDistanceCull(const Blade blade)
+{
+    return false;
+}
+
+bool shouldCull(const Blade blade, const vec3 bitangent, const vec3 v0, const vec3 v1, const vec3 v2)
+{
+    bool shouldCull = false;
+
+    #if ORIENTATION_CULLING
+    shouldCull = shouldCull || shouldOrientationCull(blade, bitangent);
+    #endif
+
+    #if FRUSTUM_CULLING
+    shouldCull = shouldCull || shouldFrustrumCull(blade, v0, v1, v2);
+    #endif
+
+    #if DISTANCE_CULLING
+    shouldCull = shouldCull || shouldDistanceCull(blade);
+    #endif
+
+    return shouldCull;
+}
+
+/* ==================== */
+/* ======= MAIN ======= */
+/* ==================== */
 void main() {
     const uint currBladeIdx = gl_GlobalInvocationID.x;
 
@@ -67,14 +127,11 @@ void main() {
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
 
-    // Orientation cull
-    #if ORIENTATION_CULLING
-    vec3 viewDir = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
-    if (abs(dot(viewDir, bitangent)) > ORIENTATION_CULLING_THRESHOLD)
+    // Cull blades
+    if (shouldCull(currBlade, bitangent, v0, v1, v2))
     {
         return;
     }
-    #endif
 
     uint idx = atomicAdd(numBlades.vertexCount, 1);
     renderableBlades[idx] = currBlade;
