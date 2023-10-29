@@ -447,7 +447,7 @@ void Renderer::CreateComputeDescriptorSets() {
         VkDescriptorBufferInfo bladesBufferInfo = {};
         bladesBufferInfo.buffer = scene->GetBlades()[i]->GetBladesBuffer();
         bladesBufferInfo.offset = 0;
-        bladesBufferInfo.range = sizeof(bladesBufferInfo.buffer);
+        bladesBufferInfo.range = NUM_BLADES * sizeof(Blade);
 
         descriptorWrites[3 * i + 0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[3 * i + 0].dstSet = computeDescriptorSets[i];
@@ -462,7 +462,7 @@ void Renderer::CreateComputeDescriptorSets() {
         VkDescriptorBufferInfo culledBladesBufferInfo = {};
         culledBladesBufferInfo.buffer = scene->GetBlades()[i]->GetCulledBladesBuffer();
         culledBladesBufferInfo.offset = 0;
-        culledBladesBufferInfo.range = sizeof(culledBladesBufferInfo.buffer);
+        culledBladesBufferInfo.range = NUM_BLADES * sizeof(Blade);
 
         descriptorWrites[3 * i + 1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[3 * i + 1].dstSet = computeDescriptorSets[i];
@@ -477,7 +477,7 @@ void Renderer::CreateComputeDescriptorSets() {
         VkDescriptorBufferInfo nBladesBufferInfo = {};
         nBladesBufferInfo.buffer = scene->GetBlades()[i]->GetNumBladesBuffer();
         nBladesBufferInfo.offset = 0;
-        nBladesBufferInfo.range = sizeof(nBladesBufferInfo.buffer);
+        nBladesBufferInfo.range = sizeof(BladeDrawIndirect);
 
         descriptorWrites[3 * i + 2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[3 * i + 2].dstSet = computeDescriptorSets[i];
@@ -1019,7 +1019,7 @@ void Renderer::RecordComputeCommandBuffer() {
     for (int i = 0; i < computeDescriptorSets.size(); i++)
     {
         vkCmdBindDescriptorSets(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 2, 1, &computeDescriptorSets[i], 0, nullptr);
-        vkCmdDispatch(computeCommandBuffer, (NUM_BLADES / WORKGROUP_SIZE) + 1, 1, 1);
+        vkCmdDispatch(computeCommandBuffer, (NUM_BLADES + WORKGROUP_SIZE - 1)/ WORKGROUP_SIZE, 1, 1);
     }
 
     // ~ End recording ~
@@ -1110,7 +1110,7 @@ void Renderer::RecordCommandBuffers() {
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, grassPipeline);
 
         for (uint32_t j = 0; j < scene->GetBlades().size(); ++j) {
-            VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetBladesBuffer() };
+            VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetCulledBladesBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
