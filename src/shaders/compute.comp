@@ -4,6 +4,10 @@
 #define WORKGROUP_SIZE 32
 
 // test variables
+#define orientation_test 1
+#define view_frustum_test 1
+#define distance_test 1
+
 #define orientation_test_threshold 0.6
 #define view_frustum_test_tolerance 0.7
 #define distance_test_n 32
@@ -124,31 +128,37 @@ void main() {
     blade.v2 = vec4(v2, width);
     blades[gl_GlobalInvocationID.x] = blade;
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
+	// Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
 
+#if orientation_test
     // Orientation test
     vec3 dirb = t1; // vector along the width of the blade
     vec3 dirc = vec3(normalize(camera.view * vec4(0, 0, 1, 0)));// view direction
     if (abs(dot(dirc, dirb)) < orientation_test_threshold) {
         return;
     }
+#endif
 
+#if view_frustum_test
     // View-frustum test
     mat4 VP = camera.proj * camera.view;
     vec3 midpoint = 0.25f * v0 + 0.5f * v1 + 0.25f * v2;
     if (!inViewFrustum(VP, v0) || !inViewFrustum(VP, midpoint) || !inViewFrustum(VP, v2)) {
 		return;
 	}
+#endif
 
+#if distance_test
     // Distance test
     vec3 c = vec3(inverse(camera.view) * vec4(0, 0, 0, 1)); // position of camera
     float dproj = length(v0 - c - up * (v0 - c) * up);
     if ((gl_GlobalInvocationID.x % distance_test_n) < floor(distance_test_n * (1.0f - dproj / distance_test_dmax))) {
         return;
     }
+#endif
 
     // Occlusion test
     // TODO: Implement this test
