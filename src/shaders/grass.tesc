@@ -30,11 +30,15 @@ void main() {
     outV2[gl_InvocationID] = inV2[gl_InvocationID];
     out_dir_height_width[gl_InvocationID] = in_dir_height_width[gl_InvocationID];
 
+    const float min_dist=2.0f;
+    const float max_dist=20.0f;
+    float dist = length(vec3(camera.view*vec4(inV0[gl_InvocationID],1.0f)));
+    int levels = int(mix(10.0,3.0,clamp((dist-min_dist)/(max_dist-min_dist),0.0,1.0)));
 	// TODO: Set level of tesselation
-    gl_TessLevelInner[0] = 4;
-    gl_TessLevelInner[1] = 4;
-    gl_TessLevelOuter[0] = 4;
-    gl_TessLevelOuter[1] = 4;
-    gl_TessLevelOuter[2] = 4;
-    gl_TessLevelOuter[3] = 4;
+    gl_TessLevelInner[0] = levels;
+    gl_TessLevelInner[1] = levels;
+    gl_TessLevelOuter[0] = levels;
+    gl_TessLevelOuter[1] = levels;
+    gl_TessLevelOuter[2] = levels;
+    gl_TessLevelOuter[3] = levels;
 }

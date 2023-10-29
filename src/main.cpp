@@ -11,8 +11,8 @@ Device* device;
 SwapChain* swapChain;
 Renderer* renderer;
 Camera* camera;
-const int window_width = 1920;
-const int window_height = 1080;
+const int window_width = 800;
+const int window_height = 800;
 
 
 namespace {
@@ -168,7 +168,7 @@ int main() {
     DestroyWindow();
     delete device;
     delete instance;
-    std::cout << "Press any key..." << std::endl;
+    std::cout << "Press any key to exit..." << std::endl;
     getchar();
     return 0;
 }

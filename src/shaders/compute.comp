@@ -120,12 +120,22 @@ vec3 getWindForce(vec3 v2, vec3 v0, vec3 up, float h)
     return windFr(v2,v0,up,h)*windFd(v2,v0)*getWindInfluence(v0);
 }
 
-
+bool checkInViewFrustrum(vec3 x)
+{
+    vec4 clipPos = camera.proj * camera.view * vec4(x, 1.0f);
+    float hClip = clipPos.w+1e-2f;
+    return inBounds(clipPos.x,hClip)&&inBounds(clipPos.y,hClip)&&inBounds(clipPos.z,hClip);
+}
 
 void main() {
     uint index = gl_GlobalInvocationID.x;
     
     if(index >= pcs.numBlades) return;
+
+    if (index == 0) {
+        numBlades.vertexCount = 0;
+	}
+	barrier();
     Blade tmp = indata[index];
     vec3 v0 = tmp.v0.xyz;
     vec3 cv1 = tmp.v1.xyz;
@@ -146,15 +156,16 @@ void main() {
     vec3 R = (iv2-cv2)*stiffness;
     vec3 W = getWindForce(cv2,v0,up,h);
     vec3 tv2 = (R+W+G)*time.deltaTime;
+    //vec3 tv2 = vec3(0.0f);
     vec3 nv2 = cv2+tv2;
 
     //Validation
-    nv2 = nv2-tmp.up.xyz*min(0,dot(up,nv2-v0));
+    nv2 = nv2 - tmp.up.xyz*min(0,dot(up,nv2-v0));
     float lproj = length(nv2-v0-up*dot(up,nv2-v0));
     vec3 nv1 = v0 + h*up*max(1-lproj/h,0.05*max(lproj/h,1));
-    float L0 = length(v0-nv1)+length(nv1-nv2);
-    float L1 = length(v0-nv2);
-    float L = (2*L0+2*L1)/4.0;
+    float L1 = length(v0-nv1)+length(nv1-nv2);
+    float L0 = length(v0-nv2);
+    float L = (2*L0+L1)/3.0;
     float r = h/max(L,1e-3f);
     vec3 cnv1 = v0+r*(nv1-v0);
     vec3 cnv2 = cnv1+r*(nv2-nv1);
@@ -169,33 +180,17 @@ void main() {
     vec3 dirb = normalize(vec3(camera.view * vec4(v0,1.0f)));
     culled = culled || (abs(dot(dirc,dirb))>0.9f?true:false);
 
-    bool inViewFrustrum = false;
     vec3 m = 0.25*v0+0.5*cnv1+0.25*cnv2;
-    vec4 clipPos;
-    float hClip;
-    clipPos = camera.proj * camera.view * vec4(v0, 1.0f);
-    hClip = abs(clipPos.w) - 1e-2f;
-    inViewFrustrum = inViewFrustrum || (inBounds(clipPos.x,hClip)&&inBounds(clipPos.y,hClip)&&inBounds(clipPos.z,hClip));
-
-    clipPos = camera.proj * camera.view * vec4(cnv2, 1.0f);
-    hClip = abs(clipPos.w) - 1e-2f;
-    inViewFrustrum = inViewFrustrum || (inBounds(clipPos.x,hClip)&&inBounds(clipPos.y,hClip)&&inBounds(clipPos.z,hClip));
-
-    clipPos = camera.proj * camera.view * vec4(m, 1.0f);
-    hClip = abs(clipPos.w) - 1e-2f;
-    inViewFrustrum = inViewFrustrum || (inBounds(clipPos.x,hClip)&&inBounds(clipPos.y,hClip)&&inBounds(clipPos.z,hClip));
-
+    bool inViewFrustrum = checkInViewFrustrum(v0)||checkInViewFrustrum(m)||checkInViewFrustrum(cnv2);
     culled = culled || (!inViewFrustrum);
 
-    vec3 posCamSpace = vec3(camera.view * vec4(v0, 1.0f));
-    vec3 upCamSpace = vec3(camera.view * vec4(up, 0.0f));
-    vec3 left = cross(upCamSpace, posCamSpace);
-    vec3 planeFront = normalize(cross(left, upCamSpace));
-    float dproj = abs(dot(posCamSpace, planeFront));
+    vec3 posCamSpace = vec3(camera.view*vec4(v0,1.0f));
+    vec3 upCamSpace = vec3(camera.view*vec4(up,0.0f));
+    vec3 viewLeft = cross(upCamSpace,posCamSpace);
+    vec3 viewFront = normalize(cross(viewLeft, upCamSpace));
+    float dproj = dot(viewFront, posCamSpace);
     int n=pcs.numCullLevels;
-    //if((index%n)<floor(n*(1-dproj/pcs.maxCullDist))) culled = true;
-    //if(dproj>pcs.maxCullDist) culled = true;
-
+    if((index%n)>floor(n*(1-dproj/pcs.maxCullDist))) culled = true;
     
     if(!culled)
     {

@@ -699,7 +699,8 @@ void Renderer::CreateGrassPipeline() {
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+    //rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_NONE;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -993,9 +994,9 @@ void Renderer::RecordComputeCommandBuffer() {
     if (scene->GetBlades().size() != 1) throw;
     ComputePushConstant consts{};
     consts.G = glm::vec4(0.0, -1.0, 0.0, 9.8);
-    consts.wind_Params = glm::vec4(1.0f, 3.0f, 20.0f, 100.0f);
+    consts.wind_Params = glm::vec4(1.0f, 3.0f, 10.0f, 100.0f);
     consts.numBlades = NUM_BLADES;
-    consts.maxCullDist = 5.0f;
+    consts.maxCullDist = 30.0f;
     consts.numCullLevels = 10;
     vkCmdPushConstants(computeCommandBuffer, computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstant), &consts);
     vkCmdDispatch(computeCommandBuffer, (NUM_BLADES + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE, 1, 1);
@@ -1118,17 +1119,11 @@ void Renderer::Frame() {
     computeSubmitInfo.commandBufferCount = 1;
     computeSubmitInfo.pCommandBuffers = &computeCommandBuffer;
 
-    BladeDrawIndirect indirectDraw;
-    indirectDraw.vertexCount = 0;
-    indirectDraw.instanceCount = 1;
-    indirectDraw.firstVertex = 0;
-    indirectDraw.firstInstance = 0;
-    BufferUtils::CopyToHostVisibleMemory(device, &indirectDraw, scene->GetBlades()[0]->GetNumBladesMemory(), sizeof(indirectDraw));
-
     if (vkQueueSubmit(device->GetQueue(QueueFlags::Compute), 1, &computeSubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit draw command buffer");
     }
-    vkQueueWaitIdle(device->GetQueue(QueueFlags::Compute));
+    //vkQueueWaitIdle(device->GetQueue(QueueFlags::Compute));
+    //vkDeviceWaitIdle(device->GetVkDevice());
     if (!swapChain->Acquire()) {
         RecreateFrameResources();
         return;
