@@ -1020,7 +1020,7 @@ void Renderer::RecordComputeCommandBuffer() {
     // For each group of blades bind its descriptor set and dispatch
     for (uint32_t i = 0; i < scene->GetBlades().size(); ++i) {
         vkCmdBindDescriptorSets(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 2, 1, &computeDescriptorSets[i], 0, nullptr);
-        vkCmdDispatch(computeCommandBuffer, (NUM_BLADES / WORKGROUP_SIZE), 1, 1); // groupCountX+1?
+        vkCmdDispatch(computeCommandBuffer, (NUM_BLADES / WORKGROUP_SIZE), 1, 1);
     }
 
     // ~ End recording ~
@@ -1177,8 +1177,6 @@ void Renderer::Frame() {
 
 Renderer::~Renderer() {
     vkDeviceWaitIdle(logicalDevice);
-
-    // TODO: destroy any resources you created
 
     vkFreeCommandBuffers(logicalDevice, graphicsCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
     vkFreeCommandBuffers(logicalDevice, computeCommandPool, 1, &computeCommandBuffer);
