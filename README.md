@@ -14,18 +14,25 @@ Vulkan Grass Rendering
 Features: 
 - culling test
   - orientation culling test
+
     ![](./img/result1.gif)
   - view frustum culling test
+
     ![](./img/result2.gif)
   - distance culling test
+
     ![](./img/result3.gif)
 - physics simulation (no force shown below)
+
   ![](./img/result4.gif)
   - gravity force
+
     ![](./img/result5.gif)
   - recovery force (with gravity)
+
     ![](./img/result6.gif)
   - wind force (with gravity and wind)
+  
     ![](./img/result.gif)
 
 ### Performance & Analysis
