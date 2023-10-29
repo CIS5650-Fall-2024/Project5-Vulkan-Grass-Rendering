@@ -26,7 +26,7 @@ void main() {
     vec3 v2 = inV2[0].xyz;
 
     float orientation = inV0[0].w;
-    vec3 t1 = normalize(vec3(cos(orientation), 0.0, sin(orientation)));
+    vec3 t1 = vec3(cos(orientation), 0.0, sin(orientation));
     float width = inV2[0].w;
 
     vec3 a = v0 + v * (v1 - v0);
