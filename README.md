@@ -50,8 +50,11 @@ There are three kinds of culling used to improve the performance:
 - View Frustrum Culling (cull grass that are outside the view Frustrum. )
 - Distance Culling (cull grass based on distance.)
 
+|Orientation Culling|Frustrum Culling|Distance Culling|
+|:-----------:|:-------------:|:-----------:|
+|![](img/orientation.gif)|![](img/frustrum.gif)|![](img/distance.gif)|
+
 ## Performance Analysis
-Test on 
 <p align = "center">
     <img src = "img/graph.png">
 </p>

@@ -50,7 +50,7 @@ const float G = 4.8f;
 const float TimeScale = 1.5f;
 const float WindScale = 2.f;
 const float OrientationThreshold = 0.9f;
-const float ViewFrustrumThreshold = 0.1f;
+const float ViewFrustrumThreshold = 0.3f;
 const int DistanceCullLevels = 10;
 const float DistanceCullMax = 20.f;
 
@@ -62,7 +62,7 @@ const float DistanceCullMax = 20.f;
 bool inBounds(vec3 value, float bounds) {
     return (value.x >= -bounds) && (value.x <= bounds) &&
 	(value.y >= -bounds) && (value.y <= bounds) &&
-	(value.z >= -bounds) && (value.z <= bounds);
+	(value.z >= -1.f) && (value.z <= 1.f);
 }
 
 vec3 GetForce(in const Blade blade)
@@ -153,7 +153,7 @@ bool CullTest(const in Blade blade)
 	vec4 m_ndc = vp * vec4(m, 1.f);
 	m_ndc /= m_ndc.w;
 
-	const float h = .9f + ViewFrustrumThreshold;
+	const float h = .7f + ViewFrustrumThreshold;
 #if ENABLE_FRUSTRUM_CULL
 	if(!inBounds(v0_ndc.xyz, h) && !inBounds(v2_ndc.xyz, h) && !inBounds(m_ndc.xyz, h)) return true;
 #endif
