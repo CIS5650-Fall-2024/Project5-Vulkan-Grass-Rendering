@@ -4,7 +4,9 @@
 // Tessellation Evaluation Shader
 // https://www.khronos.org/opengl/wiki/Tessellation#Tessellation_primitive_generation
 
-layout(quads, equal_spacing, ccw) in;
+layout(quads, equal_spacing, ccw) in; // We are using quad patches,
+                                      // so tessellation levels are applied to 
+                                      // 2 inner edges and 4 outer edges of the quad.
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
@@ -15,7 +17,7 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
 layout(location = 0) in vec4 in_V0[];
 layout(location = 1) in vec4 in_V1[];
 layout(location = 2) in vec4 in_V2[];
-layout(location = 3) in vec4 in_Up[];
+//layout(location = 3) in vec4 in_Up[];
 
 layout(location = 0) out float fs_V;
 layout(location = 1) out vec3 fs_Nor;
@@ -33,12 +35,12 @@ void main() {
 
     float orient = in_V0[0].w;
     float width = in_V2[0].w;
-
+    
     // Blade geometry based off De Casteljau's algo
     vec3 a = mix(v0, v1, v); // auxiliary
     vec3 b = mix(v1, v2, v); // auxiliary
     vec3 c = mix(a, b, v);   // curve point
-
+    
     vec3 t0 = normalize(b - a); // tangent
     vec3 t1 = normalize(vec3(-cos(orient), 0.0, sin(orient))); // bitangent from the direction vector along the width of the blade
 
@@ -47,10 +49,10 @@ void main() {
 
     float t = u + 0.5 * v - u * v; // triangle shape's interp param
     vec3 pos = mix(c0, c1, t);
-
+    
     // outputs
     fs_V = v;
     fs_Nor = normalize(cross(t0, t1));
 
-    gl_Position = camera.proj * camera.view * vec4(pos, 1.0); // in screen space
+    gl_Position = camera.proj * camera.view * vec4(pos, 1.0); // in clip space
 }

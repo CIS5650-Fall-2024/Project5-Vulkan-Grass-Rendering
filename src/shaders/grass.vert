@@ -10,12 +10,12 @@ layout(set = 1, binding = 0) uniform ModelBufferObject {
 layout(location = 0) in vec4 in_V0;
 layout(location = 1) in vec4 in_V1;
 layout(location = 2) in vec4 in_V2;
-layout(location = 3) in vec4 in_Up;
+//layout(location = 3) in vec4 in_Up;
 
 layout(location = 0) out vec4 out_V0;
 layout(location = 1) out vec4 out_V1;
 layout(location = 2) out vec4 out_V2;
-layout(location = 3) out vec4 out_Up;
+//layout(location = 3) out vec4 out_Up;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -33,7 +33,7 @@ void main() {
     out_V0 = multiply(model, in_V0);
     out_V1 = multiply(model, in_V1);
     out_V2 = multiply(model, in_V2);
-    out_Up = multiply(model, in_Up);
+    //out_Up = multiply(model, in_Up);
 
 	gl_Position = out_V0;
 }
