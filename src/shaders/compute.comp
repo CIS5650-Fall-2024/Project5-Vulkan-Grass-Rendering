@@ -82,9 +82,7 @@ void main() {
 	if (gl_GlobalInvocationID.x == 0) {
 		numBlades.vertexCount = 0;
 	}
-	barrier(); // Wait till all threads reach this point
-
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+	barrier(); 
 
     uint index = gl_GlobalInvocationID.x;
 
@@ -146,8 +144,8 @@ void main() {
     vec3 cam_position = (camera.invView * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 
     vec3 viewDir = normalize(v0 - cam_position);
-    if (0.9 < abs(dot(vec3(viewDir.x, 0.0, viewDir.z), vec3(cos(o), 0.0, sin(o))))) {
-        return;
+    if (0.75 < abs(dot(vec3(viewDir.x, 0.0, viewDir.z), vec3(cos(o), 0.0, sin(o))))) {
+       return;
     }
 
     // View Frustum
