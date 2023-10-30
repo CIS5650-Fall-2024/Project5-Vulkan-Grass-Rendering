@@ -51,7 +51,7 @@ Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) : Mode
 
 VkBuffer Blades::GetBladesBuffer() const {
     return bladesBuffer;
-}
+    }
 
 VkBuffer Blades::GetCulledBladesBuffer() const {
     return culledBladesBuffer;

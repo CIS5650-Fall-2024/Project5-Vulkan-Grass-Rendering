@@ -21,36 +21,144 @@ struct Blade {
     vec4 up;
 };
 
-// TODO: Add bindings to:
-// 1. Store the input blades
-// 2. Write out the culled blades
-// 3. Write the total number of blades remaining
-
-// The project is using vkCmdDrawIndirect to use a buffer as the arguments for a draw call
-// This is sort of an advanced feature so we've showed you what this buffer should look like
-//
-// layout(set = ???, binding = ???) buffer NumBlades {
-// 	  uint vertexCount;   // Write the number of blades remaining here
-// 	  uint instanceCount; // = 1
-// 	  uint firstVertex;   // = 0
-// 	  uint firstInstance; // = 0
-// } numBlades;
-
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+bool inBounds_vec4(vec4 value) {
+    
+    float h = value.w -0.05;
+    return inBounds(value.x,h) && inBounds(value.y,h) && inBounds(value.z,h) ;
+}
+
+
+layout(set=2, binding = 0) buffer inputBlades{
+	Blade input_blade[];
+};
+
+layout(set=2, binding = 1) buffer culledBlades{
+	Blade culled_blade[];
+};
+
+
+layout(set = 2, binding = 2) buffer NumBlades {
+    uint vertexCount;   // Write the number of blades remaining here
+ 	uint instanceCount; // = 1
+	uint firstVertex;   // = 0
+ 	uint firstInstance; // = 0
+}numBlades;
+
+
+
+
+
 void main() {
-	// Reset the number of blades to 0
+
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
-	barrier(); // Wait till all threads reach this point
+	barrier(); 
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    uint m_index = gl_GlobalInvocationID.x;
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
-	// to the culled blades buffer
-	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
-	// You want to write the visible blades to the buffer without write conflicts between threads
+
+    bool leave = true;
+
+
+    
+    vec3 c = inverse(camera.view)[3].xyz;
+    vec3 v0 = input_blade[m_index].v0.xyz;
+    vec3 v1 = input_blade[m_index].v1.xyz;
+    vec3 v2 = input_blade[m_index].v2.xyz;
+    vec3 up = input_blade[m_index].up.xyz;
+    float dmax = 50;
+    float level = 20;
+
+    //Distance test
+    //reference https://community.khronos.org/t/extracting-camera-position-from-a-modelview-matrix/68031
+    float dproj = length(v0 - c - up * dot(v0 - c,up));
+    float idModn =mod(m_index,level);
+    if(idModn >(level * (1 - dproj/dmax))){
+        leave = false;
+    }
+    //orientation test £»
+
+    float angle = input_blade[m_index].v0.w;
+    vec3 dirc = normalize(c-v0);
+    vec3 dirb = normalize(vec3(cos(angle),0.0,sin(angle)));
+
+    if(abs(dot(dirc,dirb))>0.9){
+        leave = false;
+    }
+    //View-frustum test;
+
+    vec3 midPoint = 0.25 * v0 + 0.5*v1 + 0.25*v2;
+    vec4 homo_v0 = vec4(v0,1);
+    vec4 homo_v1 = vec4(v1,1);
+    vec4 homo_v2 = vec4(midPoint,1);
+
+    mat4 vp = camera.proj * camera.view;
+    vec4 p1 = vp* homo_v0;
+    vec4 p2 = vp* homo_v1;
+    vec4 p3 = vp* homo_v2;
+    float h = input_blade[m_index].v1.w;
+
+    if ((!inBounds_vec4(p1)) && (!inBounds_vec4(p2)) &&  (!inBounds_vec4(p3)) ){
+        leave = false;
+    }
+
+
+    if(leave){
+
+        //gravity-------------------------------------
+        vec4 D = vec4(0,-1,0,9.8);
+        vec3 gE = normalize(D.xyz) * D.w;
+        vec3 f = normalize(cross(normalize(vec3(cos(angle),0.0,sin(angle))),up));
+        vec3 gF = 0.25 * length(gE) * f;
+        vec3 g = gE+gF;
+        //wind-----------------------------------------
+
+        vec3 wi = 6 * normalize(vec3(-1,0,0))* (cos(totalTime)+1);
+        float fdWiV0 = 1 - abs(dot(normalize(wi),normalize(v2-v0)));
+        float frh = dot((v2-v0),up)/h;
+        float theta = fdWiV0*frh;
+
+        vec3 w = wi*theta;
+
+        //recovery-------------------------------------
+
+        vec3 re = (v0 + up * h - v2) * input_blade[m_index].up.w;
+
+
+        //overall
+        vec3 overallForce = (g + re + w) * deltaTime;
+        //vec3 overallForce = vec3(0);
+
+        
+        v2 = v2 + overallForce;
+        v2 = v2 - up* min(dot(up, v2 - v0), 0.0);
+
+        float L_proj = length(v2 - v0 - up * dot(v2-v0 , up) );
+        
+        v1 = v0 + h * up * max(1.0-L_proj/h, 0.05*max(L_proj/h,1.0));
+
+        float n = 3;
+        float L0 = length(v2-v0);
+        float L1 = length(v2-v1) + length(v1-v0);
+        float L = (2*L0 + (n-1)*L1)/(n+1);
+
+        float r = h/L;
+        vec3 v1_correct = v0 + r*(v1-v0);
+        vec3 v2_correct = v1_correct + r*(v2-v1);
+
+        input_blade[m_index].v1.xyz = v1_correct;
+        input_blade[m_index].v2.xyz = v2_correct;
+
+        
+
+
+        culled_blade[atomicAdd(numBlades.vertexCount, 1)] = input_blade[m_index];
+    
+    }
+    
 }
