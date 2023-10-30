@@ -36,7 +36,7 @@ void main() {
     tes_up[gl_InvocationID] = tcs_up[gl_InvocationID];
 
     float dist = distance(gl_out[gl_InvocationID].gl_Position.xyz, camera.invView[3].xyz);
-    float t = smoothstep(12, 1, dist);
+    float t = smoothstep(15, 1, dist);
 
     int tesselationLevel = int(ceil(mix(LOD_LOW, LOD_HIGH, t)));
 
