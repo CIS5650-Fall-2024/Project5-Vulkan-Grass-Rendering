@@ -15,7 +15,7 @@ layout(location = 0) out vec4 outColor;
 void main() {
     // blade base albedo
     vec3 rootColor = vec3(103, 139, 61) / 255.0;
-    vec3 tipColor =  vec3(68, 92, 41) / 255.0; //vec3(0.0, 0.98, 0.0);//
+    vec3 tipColor =  vec3(68, 92, 41) / 255.0; //vec3(0.0, 0.98, 0.0);
     vec3 albedo = mix(rootColor, tipColor, fs_V);
 
     // diffuse lighting

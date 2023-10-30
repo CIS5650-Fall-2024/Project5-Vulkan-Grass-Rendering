@@ -17,7 +17,6 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
 layout(location = 0) in vec4 in_V0[];
 layout(location = 1) in vec4 in_V1[];
 layout(location = 2) in vec4 in_V2[];
-//layout(location = 3) in vec4 in_Up[];
 
 layout(location = 0) out float fs_V;
 layout(location = 1) out vec3 fs_Nor;

@@ -7,11 +7,11 @@
 #define WIND_FREQ			0.4
 
 #define ORIENT_CULL			1
-#define VIEW_FRUSTUM_CULL	0
-#define DIST_CULL			0
+#define VIEW_FRUSTUM_CULL	1
+#define DIST_CULL			1
 
 #define ORIENTATION_THRESHOLD	0.6
-#define FRUSTUM_TOLERANCE		-2	// exaggerated value to better see culling effect
+#define FRUSTUM_TOLERANCE		-0.2	// exaggerated value to better see culling effect
 #define MAX_DIST				20.0
 #define NUM_DIST_LEVELS			10
 
