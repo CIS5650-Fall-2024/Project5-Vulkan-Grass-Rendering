@@ -175,9 +175,10 @@ void validateState(const vec3 v0, inout vec3 v1, inout vec3 v2, const vec3 up, c
 /* ====== CULLING ===== */
 /* ==================== */
 
-#define ORIENTATION_CULLING 1
+#define ORIENTATION_CULLING 0
 #define FRUSTUM_CULLING 1
 #define DISTANCE_CULLING 1
+#define DO_ALL_CULLING_POST_PHYSICS 1
 
 #define ORIENTATION_CULLING_THRESHOLD 0.97
 #define FRUSTUM_CULLING_TOLERANCE -0.5f
@@ -223,20 +224,45 @@ bool shouldDistanceCull(const uint idx, const vec3 v0, const vec3 up)
     return idx % DISTANCE_CULLING_BUCKETS < floor(DISTANCE_CULLING_BUCKETS * (1.0f - dProj / FRUSTUM_FAR_CLIP));
 }
 
-bool shouldCull(const uint idx, const vec3 bitangent, const vec3 v0, const vec3 v1, const vec3 v2, const vec3 up)
+// Some culling should happen before even evaluating physical forces
+// There's no reason to evaluate physics compute if the blade will be culled!
+// This is also something Ghost of Tsushima does
+bool shouldCullPrePhysics(const uint idx, const vec3 bitangent, const vec3 v0, const vec3 up)
 {
+#if DO_ALL_CULLING_POST_PHYSICS
+    return false;
+#endif
+
     bool shouldCull = false;
 
     #if ORIENTATION_CULLING
     shouldCull = shouldCull || shouldOrientationCull(bitangent);
     #endif
 
-    #if FRUSTUM_CULLING
-    shouldCull = shouldCull || shouldFrustrumCull(v0, v1, v2);
+    #if DISTANCE_CULLING
+    shouldCull = shouldCull || shouldDistanceCull(idx, v0, up);
+    #endif
+
+    return shouldCull;
+}
+
+bool shouldCullPostPhysics(const uint idx, const vec3 bitangent, const vec3 v0, const vec3 v1, const vec3 v2, const vec3 up)
+{
+    // Since frustum culling in the paper uses v2 and a midpoint, we can only do this AFTER the physical model has been evaluated and v2 been updated
+    bool shouldCull = false;
+
+#if DO_ALL_CULLING_POST_PHYSICS
+    #if ORIENTATION_CULLING
+    shouldCull = shouldCull || shouldOrientationCull(bitangent);
     #endif
 
     #if DISTANCE_CULLING
     shouldCull = shouldCull || shouldDistanceCull(idx, v0, up);
+    #endif
+#endif
+
+    #if FRUSTUM_CULLING
+    shouldCull = shouldCull || shouldFrustrumCull(v0, v1, v2);
     #endif
 
     return shouldCull;
@@ -266,6 +292,12 @@ void main() {
     const float stiffnessCoeff = currBlade.up.w;
     vec3 bitangent = normalize(vec3(cos(angle), 0.0f, sin(angle)));
 
+    // Cull blades before the physical model
+    if (shouldCullPrePhysics(currBladeIdx, bitangent, v0, up))
+    {
+        return;
+    }
+
     // Get total force
     vec3 totalForce = getExternalForces(v0, v1, v2, up, bitangent, angle, width, height, stiffnessCoeff);
     v2 += totalForce;
@@ -283,7 +315,7 @@ void main() {
 	// You want to write the visible blades to the buffer without write conflicts between threads
 
     // Cull blades
-    if (shouldCull(currBladeIdx, bitangent, v0, v1, v2, up))
+    if (shouldCullPostPhysics(currBladeIdx, bitangent, v0, v1, v2, up))
     {
         return;
     }
