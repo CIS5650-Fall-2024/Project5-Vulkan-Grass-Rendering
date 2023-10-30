@@ -1,4 +1,6 @@
 #include <vulkan/vulkan.h>
+#include <iomanip>
+#include <sstream>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
@@ -67,7 +69,7 @@ namespace {
 
 int main() {
     static constexpr char* applicationName = "Vulkan Grass Rendering";
-    InitializeWindow(640, 480, applicationName);
+    InitializeWindow(960, 720, applicationName);
 
     unsigned int glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -90,7 +92,7 @@ int main() {
 
     swapChain = device->CreateSwapChain(surface, 5);
 
-    camera = new Camera(device, 640.f / 480.f);
+    camera = new Camera(device, 960.f / 720.f);
 
     VkCommandPoolCreateInfo transferPoolInfo = {};
     transferPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -143,10 +145,29 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    int frames = 0;
+    float cumTime = 0;
+    float fps = 0;
+
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
+
+        float s = scene->GetDeltaTime();
+        ++frames;
+        if (cumTime >= 1.f) {
+            fps = static_cast<float>(frames) / cumTime;
+            cumTime = 0;
+            frames = 0;
+        }
+        else {
+            cumTime += s;
+        }
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2);
+        ss << "Vulkan Grass Rendering [" << fps << " fps, " << s * 1000.f << " ms/frame]";
+        glfwSetWindowTitle(GetGLFWWindow(), ss.str().c_str());
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());
