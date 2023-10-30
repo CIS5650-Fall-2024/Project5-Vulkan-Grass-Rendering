@@ -21,8 +21,20 @@ layout(location = 0) out vec4[] out_V0;
 layout(location = 1) out vec4[] out_V1;
 layout(location = 2) out vec4[] out_V2;
 
-#define TESS_LEVEL_INNER 8
-#define TESS_LEVEL_OUTER 8
+#define TESS_LEVEL 8.0
+#define DYNAMIC_TESS_LEVEL 1
+
+// halve the LOD based on camera-to-blade distance
+float computeTessLevel(float dist) {
+    float lod = TESS_LEVEL;
+    if (dist > 10.0) { // hard-coded distance ranges
+        lod *= 0.5; 
+    }
+    if (dist > 20.0) {
+        lod *= 0.5;
+    }
+    return lod;
+}
 
 void main() {
 	// Don't move the origin location of the patch
@@ -34,10 +46,18 @@ void main() {
     out_V2[gl_InvocationID] = in_V2[gl_InvocationID];
 
 	// Set level of tesselation
-    gl_TessLevelInner[0] = TESS_LEVEL_INNER;
-    gl_TessLevelInner[1] = TESS_LEVEL_INNER;
-    gl_TessLevelOuter[0] = TESS_LEVEL_OUTER;
-    gl_TessLevelOuter[1] = TESS_LEVEL_OUTER;
-    gl_TessLevelOuter[2] = TESS_LEVEL_OUTER;
-    gl_TessLevelOuter[3] = TESS_LEVEL_OUTER;
+    float lod = TESS_LEVEL;
+
+#if DYNAMIC_TESS_LEVEL
+    vec3 camPos = inverse(camera.view)[3].xyz;
+    vec3 v0 = in_V0[gl_InvocationID].xyz;
+    lod = computeTessLevel(distance(v0, camPos));
+#endif
+
+    gl_TessLevelInner[0] = lod;
+    gl_TessLevelInner[1] = lod;
+    gl_TessLevelOuter[0] = lod;
+    gl_TessLevelOuter[1] = lod;
+    gl_TessLevelOuter[2] = lod;
+    gl_TessLevelOuter[3] = lod;
 }

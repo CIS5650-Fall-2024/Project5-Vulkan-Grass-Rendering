@@ -173,6 +173,35 @@ To see how different culling tests contribute to performance, I compare the FPS 
 
 Distance culling and orientation culling has similar contributions while frustum culling seems to have no benefit, even slower. This is because with the initial camera settings, all the grass blades are visible/ reside within the view frustum so we are still updating every single blade every frame, except that now we are performing extra computation. The closer the camera is to the scene, the more significant view-frustum culling has impact on the performance because more grass are cut out of the screen and not rendered. Conversely, the farther the camera is, the better distance culling performs since more grass to be culled is beyond the maximum distance.
 
+### Dynamic Tessellation Level
+Since the advantages of various culling tests are driven by camera placement, I want to seek a method to simplify the blade geometry itself, rather than removing that entire blade. Reducing the mesh polygon count on the grass blade based on some criteria directs me back to TCS. We can change levels of detail (LOD) for each patch based on how far the grass blade is from the camera. For example, if the blade is very far, only generate four vertices in TCS.
+
+My algorithm halves the LOD iteratively given two rings of hard-coded distance ranges.
+```
+float computeTessLevel(float distCamToBlade)
+{
+    float lod = DEFAULT_TESS_LEVEL;
+    if (distCamToBlade > 10.0)
+    {
+        lod *= 0.5;
+    }
+    if (distCamToBlade > 20.0)
+    {
+        lod *= 0.5;
+    }
+    return lod;
+}
+
+```
+
+You can see the LOD of the middle blade changes when the camera zooms in/out. |
+---|
+![](/img/results/dynamicLOD.gif) |
+
+Replacing the fixed tessellation level with dynamic LOD, even without any culling method, the same test case (# blades = 2<sup>14</sup> in Different Culling Tests) now yields an average FPS of `690.5`, versus the original `280.3` in the chart above. With ALL culling tests on, dynamic LOD has an average FPS of `1853.2`, versus the original `701.8`. The speedup makes sense because we inherently process/render less vertex data. If time permits, I'd like to measure the performance with various culling tests turned on to solidify a more convincing conclusion. 
+
+One drawback of dynamic tessellation level is that it sacrifices visual quality as we lose details for objects farther away. Nevertheless, balancing computation resources and high standard visuals is always something subjective the developers have to decide.
+
 ## Resources
 * [Responsive Real-Time Grass Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf)
 * [Rhuta's Vulkan Grass Notes](https://github.com/rcj9719/gpu-vulkan-grass-rendering/))
