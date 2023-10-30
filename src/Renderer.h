@@ -47,6 +47,7 @@ private:
     SwapChain* swapChain;
     Scene* scene;
     Camera* camera;
+    long int framecount;
 
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
@@ -55,12 +56,15 @@ private:
 
     VkDescriptorSetLayout cameraDescriptorSetLayout;
     VkDescriptorSetLayout modelDescriptorSetLayout;
+    VkDescriptorSetLayout computeDescriptorSetLayout;
     VkDescriptorSetLayout timeDescriptorSetLayout;
     
     VkDescriptorPool descriptorPool;
 
     VkDescriptorSet cameraDescriptorSet;
     std::vector<VkDescriptorSet> modelDescriptorSets;
+    std::vector<VkDescriptorSet> grassDescriptorSets;
+    std::vector<VkDescriptorSet> computeDescriptorSets;
     VkDescriptorSet timeDescriptorSet;
 
     VkPipelineLayout graphicsPipelineLayout;
