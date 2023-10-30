@@ -175,15 +175,15 @@ void validateState(const vec3 v0, inout vec3 v1, inout vec3 v2, const vec3 up, c
 /* ====== CULLING ===== */
 /* ==================== */
 
-#define ORIENTATION_CULLING 0
-#define FRUSTUM_CULLING 0
-#define DISTANCE_CULLING 0
+#define ORIENTATION_CULLING 1
+#define FRUSTUM_CULLING 1
+#define DISTANCE_CULLING 1
 
 #define ORIENTATION_CULLING_THRESHOLD 0.97
-#define FRUSTUM_CULLING_TOLERANCE -2
+#define FRUSTUM_CULLING_TOLERANCE -0.5f
 #define FRUSTUM_NEAR_CLIP 0.5
-#define FRUSTUM_FAR_CLIP 15        // this is also the "max distance" in distance culling.
-#define DISTANCE_CULLING_BUCKETS 4
+#define FRUSTUM_FAR_CLIP 20        // this is also the "max distance" in distance culling.
+#define DISTANCE_CULLING_BUCKETS 40
 
 bool shouldOrientationCull(const vec3 bitangent)
 {

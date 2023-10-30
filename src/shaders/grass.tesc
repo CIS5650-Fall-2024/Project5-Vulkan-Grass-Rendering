@@ -1,6 +1,9 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define LOD_HIGH 4
+#define LOD_LOW 1
+
 layout(vertices = 1) out;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
@@ -32,13 +35,16 @@ void main() {
     tes_v2[gl_InvocationID] = tcs_v2[gl_InvocationID];
     tes_up[gl_InvocationID] = tcs_up[gl_InvocationID];
 
-    int tesselationLevel = 8;
+    float dist = distance(gl_out[gl_InvocationID].gl_Position.xyz, camera.invView[3].xyz);
+    float t = smoothstep(12, 1, dist);
+
+    int tesselationLevel = int(ceil(mix(LOD_LOW, LOD_HIGH, t)));
 
 	// Set level of tesselation
-     gl_TessLevelInner[0] = tesselationLevel;
-     gl_TessLevelInner[1] = tesselationLevel;
-     gl_TessLevelOuter[0] = tesselationLevel;
-     gl_TessLevelOuter[1] = tesselationLevel;
-     gl_TessLevelOuter[2] = tesselationLevel;
-     gl_TessLevelOuter[3] = tesselationLevel;
+    gl_TessLevelInner[0] = tesselationLevel;
+    gl_TessLevelInner[1] = tesselationLevel;
+    gl_TessLevelOuter[0] = tesselationLevel;
+    gl_TessLevelOuter[1] = tesselationLevel;
+    gl_TessLevelOuter[2] = tesselationLevel;
+    gl_TessLevelOuter[3] = tesselationLevel;
 }
