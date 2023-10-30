@@ -41,14 +41,86 @@ layout(set = 2, binding = 2) buffer NumBlades {
  	  uint firstInstance; // = 0
 } numBlades;
 
+/* ============================= */
+/* ====== NOISE FUNCTIONS ====== */
+/* ============================= */
+
+// Most of these functions are from CIS 560 slides, slightly tweaked for this use case
+
+vec2 random2(vec2 p)
+{
+    return fract(sin(vec2(dot(p, vec2(127.1f, 311.7f)),
+                 dot(p, vec2(269.5f,183.3f))))
+                 * 43758.5453f);
+}
+
+float surflet2D(vec2 p, vec2 gridPoint)
+{
+    // Compute falloff function by converting linear distance to a polynomial
+    float distX = abs(p.x - gridPoint.x);
+    float distY = abs(p.y - gridPoint.y);
+    float tX = 1 - 6 * pow(distX, 5.f) + 15 * pow(distX, 4.f) - 10 * pow(distX, 3.f);
+    float tY = 1 - 6 * pow(distY, 5.f) + 15 * pow(distY, 4.f) - 10 * pow(distY, 3.f);
+    // Get the random vector for the grid point
+    vec2 rand = random2(gridPoint);
+    vec2 gradient = normalize(2.f * rand - vec2(1.f));
+    // Get the vector from the grid point to P
+    vec2 diff = p - gridPoint;
+    // Get the value of our height field by dotting grid->P with our gradient
+    float height = dot(diff, gradient);
+    // Scale our height field (i.e. reduce it) by our polynomial falloff function
+    return height * tX * tY;
+}
+
+float perlinNoise2D(vec2 p)
+{
+    float surfletSum = 0.f;
+    // Iterate over the four integer corners surrounding uv
+    for(int dx = 0; dx <= 1; ++dx) {
+        for(int dy = 0; dy <= 1; ++dy) {
+            surfletSum += surflet2D(p, floor(p) + vec2(dx, dy));
+        }
+    }
+    return surfletSum;
+}
+
 /* ==================== */
 /* ====== FORCES ====== */
 /* ==================== */
 
-float BLADE_MASS = 0.8f;
+float BLADE_MASS = 0.01f;
 vec3 GRAVITY_DIRECTION = vec3(0.0, 1.0, 0.0);
-float GRAVITY_ACCELERATION = -9.8f;
-#define PI_OVER_FOUR 0.785398163f
+float GRAVITY_ACCELERATION = -1.0f;
+vec2 WIND_STRENGTH = vec2(5.0, 0.0);
+
+#define WIND_SCROLL_SPEED vec2(3.0, 2.0)
+#define PI_OVER_TWO 1.57079632679f
+
+// This is inspired from Ghost of Tsushima's procedural grass system
+// source: https://www.youtube.com/watch?v=Ibe1JBF5i5Y
+vec3 getWindForce(const vec3 v0, const vec3 v2, const vec3 up, const float height)
+{
+    // We don't care about y value here, only scrolling perlin noise in the 2D XZ plane
+    vec2 uv = v0.xz;
+
+    // Scroll UV
+    uv += WIND_SCROLL_SPEED * totalTime;
+
+    // Get wind noise
+    float noise = perlinNoise2D(uv * 0.5f) * 0.5f;
+
+    vec2 wind2d = WIND_STRENGTH * noise;
+
+    vec3 windInfluence = vec3(wind2d.x, 0.0f, wind2d.y);
+
+    // Refer section 5.1 of paper
+    vec3 dir = v2 - v0;
+    float fd = 1.0 - abs(dot(normalize(windInfluence), normalize(dir)));
+    float fr = dot(dir, up) / height;
+    float theta = fd * fr;
+
+    return windInfluence * theta;
+}
 
 vec3 getExternalForces(const vec3 v0, const vec3 v1, const vec3 v2, const vec3 up, vec3 bitangent,
                        const float angle, const float width, const float height, const float stiffnessCoeff)
@@ -58,15 +130,19 @@ vec3 getExternalForces(const vec3 v0, const vec3 v1, const vec3 v2, const vec3 u
     const vec3 initialV2 = v0 + height * up;
 
     // Apply forces on every blade and update the vertices in the buffer
-    vec3 recoveryForce = (initialV2 - v2) * stiffnessCoeff;                                 // Hooke's Law
-    vec3 gravityEnvironmental = BLADE_MASS * GRAVITY_DIRECTION * GRAVITY_ACCELERATION;      // f = ma
 
-    vec3 front = normalize(vec3(cos(angle + 1.57079632679), 0.0f, sin(angle + 1.57079632679))); //normalize(cross(bitangent, up));
+    // Recovery force
+    vec3 recoveryForce = (initialV2 - v2) * stiffnessCoeff * 0.5f;                                 // Hooke's Law
+
+    // Gravitational forces (main + front)
+    vec3 gravityEnvironmental = BLADE_MASS * GRAVITY_DIRECTION * GRAVITY_ACCELERATION;      // f = ma
+    vec3 front = normalize(cross(bitangent, up));
     vec3 gravityFront = 0.25f * gravityEnvironmental * front;
 
-    vec3 gravity = gravityEnvironmental + 0 * gravityFront;
+    vec3 gravity = gravityEnvironmental + gravityFront;
 
-    vec3 wind = vec3(3.0f + sin(totalTime) * 0.3, 0.0f, 0.0f);// vec3(sin(totalTime), cos(totalTime), -sin(totalTime)) * 3.0f;
+    vec3 wind = getWindForce(v0, v2, up, height);
+
     vec3 totalForce = (recoveryForce + gravity + wind) * deltaTime;
     return totalForce;
 }
@@ -81,13 +157,13 @@ void validateState(const vec3 v0, inout vec3 v1, inout vec3 v2, const vec3 up, c
     float lProjOverHeight = lProj / height;
     v1 = v0 + height * up * max(1.0 - lProjOverHeight, 0.05f * max(lProjOverHeight, 1.0f));
     
-    float len1 = distance(v0, v1);
-    float len2 = distance(v1, v2);
+    float L0 = distance(v0, v2);                            // distance between first and last control pt
+    float L1 = distance(v0, v1) + distance(v1, v2);         // sum of distance between all consecutive pts
 
-    // formula in paper is generalized L = (2 * len1 + (n-1) * sumAllLens) / (n+1)
-    // n is 3 in our case, so this simplifies to (2 * len1 + 2 * (len1 + len2)) / 4
-    // which simplifies to 2 * (len1 + len1 + len2) / 4 = (len1 + len1 + len2) / 2
-    float L = (len1 + len1 + len2) * 0.5f;
+    // formula in paper is generalized L = (2 * L0 + (n-1) * L1) / (n+1)
+    // n is 3 in our case, so this simplifies to (2 * L0 + 2 * L1) / 4
+    // which simplifies to 2 * (L0 + L1) / 4 = (L0 + L1) / 2
+    float L = (L0 + L1) * 0.5f;
     float r = height / L;
 
     v1 = v0 + r * (v1 - v0);
