@@ -46,9 +46,17 @@ View frustrum Test:  Cull grass blades that outside the view frustrum.
 
 View frustrum Test:  Cull grass blades according to distance. A further grass blade has higher chance to be culled out.
 <div align = center>
- <img src="img/4_distance_test.gif" width = "320" height = "260">
+ <img src="img/4_distance_test.gif" width = "384" height = "312">
 </div>
 
 ### Analysis
 
-average time of each frame 0.0166s (about 60 fps)
+The analysis graph is below, where render time with three different cull test is recorded seperately.
+
+![](/img/grass_graph.png)
+
+From the graph we can see that, three cull methods all have contribution, and among them, the importance are: distance > orientation > view frustrum.
+
+I think the reason is that, the distance test can cull many unimportant grass far away from the camera. And the orientation will also cull some grass, but since the orientatino of grass is distributed uniformly, so the ratio of grass culled by orientation test is nearly fixed and less than distance test.
+
+For view frustrum test, if there are lots of grass outside the view frustrum, like behhind the camera, this test would be more useful. But in my test case, I didn't put camera in front of much grass on purpose, so this test just help a little compared with the other two tests.

@@ -36,8 +36,8 @@ void Scene::UpdateTime() {
 
     static int c = 0;
     static double total = 0.0;
-    if (c == 100) {
-        std::cout << "avg frame time: " << total / 100.0 << std::endl;
+    if (c == 30) {
+        std::cout << "avg fps: " << 30 / total << std::endl;
         c = 0;
         total = 0.0;
     }

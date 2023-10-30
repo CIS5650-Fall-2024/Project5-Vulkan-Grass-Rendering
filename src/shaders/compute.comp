@@ -1,8 +1,6 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-#define NUM_BLADES 8192
-
 #define WORKGROUP_SIZE 32
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -39,11 +37,11 @@ layout(set = 2, binding = 0) buffer NumBlades {
 } numBlades;
 
 layout(set = 2, binding = 1) buffer Blades {
-    Blade[NUM_BLADES] blades;
+    Blade[] blades;
 } blades;
 
 layout(set = 2, binding = 2) buffer CulledBlades {
-    Blade[NUM_BLADES] blades;
+    Blade[] blades;
 } culledBlades;
 
 bool inBounds(float value, float bounds) {
@@ -105,11 +103,13 @@ void main() {
     
     vec3 viewForward = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
     
+    
     // 1.orientation test
     if(abs(dot(normalize(bitangent.xz), normalize(viewForward.xz))) > 0.9){
         cullTest = false;
     }
-
+    
+     
     
     // 2.view frustrum test
     if(cullTest){
@@ -130,6 +130,7 @@ void main() {
             cullTest = false;
         }
     }
+    
 
     
     // 3.Distance test
