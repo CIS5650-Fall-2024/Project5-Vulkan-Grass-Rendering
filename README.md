@@ -7,7 +7,7 @@ Vulkan Grass Rendering
   * [LinkedIn](https://www.linkedin.com/in/udwivedi/), [personal website](https://utkarshdwivedi.com/)
 * Tested on: Windows 11 Home, AMD Ryzen 7 5800H @ 3.2GHz 16 GB, Nvidia GeForce RTX 3060 Laptop GPU 6 GB
 
-![](img)
+![](img/grassHighlight.gif)
 
 ## Introduction
 
@@ -112,7 +112,7 @@ For analysing FPS with increasing number of grass blades, no culling was tested 
 |:-:|
 |![](img/fpsVsBlades.png)|
 
-The frame rate really starts to take a hit once the blade count increases logarithmically beyond a very small number. This is expected, and this is exactly where strategies like occlusion culling, grid based binning, etc. will help.
+The frame rate really starts to take a hit once the blade count increases logarithmically beyond a very small number. This is expected, and this is exactly where strategies like occlusion culling, tiling (ref. Ghost of Tsushima talk), etc. will help.
 
 ## References
 
