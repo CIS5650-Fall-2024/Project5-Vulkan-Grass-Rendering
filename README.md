@@ -29,9 +29,9 @@ Orientation culling, view-frustum culling and distance culling are implemented i
 
 In orientation culling test, a grass blade is culled if its front face direction is almost perpendicular to the view vector, causing it to be smaller than the size of a pixel.
 
-In view-frustum culling, a grass blade is culled if it is outside the view-frustum, causing it not to show up in the frame.
+In view-frustum culling test, a grass blade is culled if it is outside the view-frustum, causing it not to show up in the frame.
 
-In distance culling, a grass blade is culled if it is far enough from the camera, causing it to be smaller than the size of a pixel.
+In distance culling test, a grass blade is culled if it is far enough from the camera, causing it to be smaller than the size of a pixel.
 
 #### Tessellating Bezier curves into grass blades
 Each Bezier curve is passed in as a single patch to be processed by the grass graphics pipeline. The patch is then tessellated into the quadratic shape.
