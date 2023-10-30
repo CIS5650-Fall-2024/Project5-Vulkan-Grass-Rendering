@@ -88,13 +88,13 @@ float perlinNoise2D(vec2 p)
 /* ====== FORCES ====== */
 /* ==================== */
 
-float BLADE_MASS = 0.01f;
-vec3 GRAVITY_DIRECTION = vec3(0.0, 1.0, 0.0);
-float GRAVITY_ACCELERATION = -1.0f;
-vec2 WIND_STRENGTH = vec2(5.0, 0.0);
+#define BLADE_MASS 0.01f
+#define GRAVITY_DIRECTION vec3(0.0, 1.0, 0.0)
+#define GRAVITY_ACCELERATION -1.0f
+#define WIND_STRENGTH vec2(5.0, 0.0)
 
 #define WIND_SCROLL_SPEED vec2(3.0, 2.0)
-#define PI_OVER_TWO 1.57079632679f
+
 
 // This is inspired from Ghost of Tsushima's procedural grass system
 // source: https://www.youtube.com/watch?v=Ibe1JBF5i5Y
