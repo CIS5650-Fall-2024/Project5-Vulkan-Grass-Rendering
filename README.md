@@ -172,3 +172,13 @@ To see how different culling tests contribute to performance, I compare the FPS 
 ![](/img/results/fps-culling.png)
 
 Distance culling and orientation culling has similar contributions while frustum culling seems to have no benefit, even slower. This is because with the initial camera settings, all the grass blades are visible/ reside within the view frustum so we are still updating every single blade every frame, except that now we are performing extra computation. The closer the camera is to the scene, the more significant view-frustum culling has impact on the performance because more grass are cut out of the screen and not rendered. Conversely, the farther the camera is, the better distance culling performs since more grass to be culled is beyond the maximum distance.
+
+## Resources
+* [Responsive Real-Time Grass Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf)
+* [Rhuta's Vulkan Grass Notes](https://github.com/rcj9719/gpu-vulkan-grass-rendering/))
+* [Official Vulkan documentation](https://www.khronos.org/registry/vulkan/)
+* [RenderDoc blog on Vulkan](https://renderdoc.org/vulkan-in-30-minutes.html)
+* [Tessellation tutorial](https://ogldev.org/www/tutorial30/tutorial30.html)
+* [OpenGL Tessellation](https://www.khronos.org/opengl/wiki/Tessellation#Tessellation_primitive_generation)
+* [Vulkan Pipeline](https://docs.vulkan.org/spec/latest/chapters/pipelines.html)
+
