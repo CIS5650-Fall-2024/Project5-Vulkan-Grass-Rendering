@@ -1,6 +1,7 @@
 #include <vector>
 #include "Blades.h"
 #include "BufferUtils.h"
+#include <iostream>
 
 float generateRandomFloat() {
     return rand() / (float)RAND_MAX;
@@ -38,6 +39,12 @@ Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) : Mode
         blades.push_back(currentBlade);
     }
 
+    auto printVec = [](glm::vec4 v) -> void {std::cout << "(" << v.x << ", " << v.y << "," << v.z << ", " << v.w << ")" << std::endl; };
+    std::cout << "blades[0].v0" << std::endl; printVec(blades[0].v0);
+    std::cout << "blades[0].v1" << std::endl; printVec(blades[0].v1);
+    std::cout << "blades[0].v2" << std::endl; printVec(blades[0].v2);
+    std::cout << "blades[0].up" << std::endl; printVec(blades[0].up);
+
     BladeDrawIndirect indirectDraw;
     indirectDraw.vertexCount = NUM_BLADES;
     indirectDraw.instanceCount = 1;
@@ -45,7 +52,7 @@ Blades::Blades(Device* device, VkCommandPool commandPool, float planeDim) : Mode
     indirectDraw.firstInstance = 0;
 
     BufferUtils::CreateBufferFromData(device, commandPool, blades.data(), NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, bladesBuffer, bladesBufferMemory);
-    BufferUtils::CreateBuffer(device, NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, culledBladesBuffer, culledBladesBufferMemory);
+    BufferUtils::CreateBuffer(device, NUM_BLADES * sizeof(Blade), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, culledBladesBuffer, culledBladesBufferMemory);
     BufferUtils::CreateBufferFromData(device, commandPool, &indirectDraw, sizeof(BladeDrawIndirect), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, numBladesBuffer, numBladesBufferMemory);
 }
 

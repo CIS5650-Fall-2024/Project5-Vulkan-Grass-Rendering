@@ -1,5 +1,6 @@
 #include "Scene.h"
 #include "BufferUtils.h"
+#include <iostream>
 
 Scene::Scene(Device* device) : device(device) {
     BufferUtils::CreateBuffer(device, sizeof(Time), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, timeBuffer, timeBufferMemory);
@@ -32,6 +33,16 @@ void Scene::UpdateTime() {
     time.totalTime += time.deltaTime;
 
     memcpy(mappedData, &time, sizeof(Time));
+
+    static int c = 0;
+    static double total = 0.0;
+    if (c == 30) {
+        std::cout << "avg fps: " << 30 / total << std::endl;
+        c = 0;
+        total = 0.0;
+    }
+    c++;
+    total += nextDeltaTime.count();
 }
 
 VkBuffer Scene::GetTimeBuffer() const {

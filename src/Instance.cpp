@@ -367,6 +367,5 @@ Instance::~Instance() {
             func(instance, debugReportCallback, nullptr);
         }
     }
-
     vkDestroyInstance(instance, nullptr);
 }
