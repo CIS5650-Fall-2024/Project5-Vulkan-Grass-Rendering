@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-#define LOD_HIGH 4
+#define LOD_HIGH 10
 #define LOD_LOW 1
 
 layout(vertices = 1) out;

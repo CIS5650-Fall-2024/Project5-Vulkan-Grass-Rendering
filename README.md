@@ -7,6 +7,8 @@ Vulkan Grass Rendering
   * [LinkedIn](https://www.linkedin.com/in/udwivedi/), [personal website](https://utkarshdwivedi.com/)
 * Tested on: Windows 11 Home, AMD Ryzen 7 5800H @ 3.2GHz 16 GB, Nvidia GeForce RTX 3060 Laptop GPU 6 GB
 
+![](img)
+
 ## Introduction
 
 This is a Vulkan based grass renderer heavily based on the paper [Responsive Real-Time Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf). It also draws inspiration from certain elements of [Ghost of Tsushima's procedural grass rendering pipeline](https://www.youtube.com/watch?v=Ibe1JBF5i5Y).
@@ -89,3 +91,30 @@ The tessellation evaluation shader does the actual tessellation of the vertices.
 The fragment shader applies a simple lambertian shading model to colour the grass blades.
 
 ## Performance Analysis
+
+For performance analysis, a scene resolution of 1280x720 was used.
+
+### Culling
+
+For analysing culling, the number of grass blades in the scene was kept at **2<sup>13</sup>**.
+
+|Frame rate at different culling strategies|
+|:-:|
+|![](img/fpsVsCulling.png)|
+
+This is pretty expected. Each culling method is slightly more advanced and improves performance individually. When all culling is applied after physics calculations, the performance gain is improved further. Changing this to applying **orientation** and **distance** culling before computing physics, and only applying the **frustum** culling after computing physics, similar to Ghost of Tsushima, has an further improved performance. This has potential of improvement by implementing occlusion culling, which would really start showing its potential with very high blade counts.
+
+### Varying blade counts
+
+For analysing FPS with increasing number of grass blades, no culling was tested against "pre+post" culling.
+
+|Frame rate at increasing blade counts|
+|:-:|
+|![](img/fpsVsBlades.png)|
+
+The frame rate really starts to take a hit once the blade count increases logarithmically beyond a very small number. This is expected, and this is exactly where strategies like occlusion culling, grid based binning, etc. will help.
+
+## References
+
+- [Responsive Real-Time Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf)
+- [Sucker Punch Productions, Ghost of Tsushima's procedural grass rendering pipeline talk](https://www.youtube.com/watch?v=Ibe1JBF5i5Y)
