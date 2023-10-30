@@ -15,6 +15,7 @@ Camera::Camera(Device* device, float aspectRatio) : device(device) {
     cameraBufferObject.viewMatrix = glm::lookAt(glm::vec3(0.0f, 1.0f, 10.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     cameraBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
     cameraBufferObject.projectionMatrix[1][1] *= -1; // y-coordinate is flipped
+    cameraBufferObject.invViewMatrix = glm::inverse(cameraBufferObject.viewMatrix);
 
     BufferUtils::CreateBuffer(device, sizeof(CameraBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer, bufferMemory);
     vkMapMemory(device->GetVkDevice(), bufferMemory, 0, sizeof(CameraBufferObject), 0, &mappedData);
@@ -36,6 +37,7 @@ void Camera::UpdateOrbit(float deltaX, float deltaY, float deltaZ) {
     glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), radTheta, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), radPhi, glm::vec3(1.0f, 0.0f, 0.0f));
     glm::mat4 finalTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f)) * rotation * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, r));
 
+    cameraBufferObject.invViewMatrix = finalTransform;
     cameraBufferObject.viewMatrix = glm::inverse(finalTransform);
 
     memcpy(mappedData, &cameraBufferObject, sizeof(CameraBufferObject));

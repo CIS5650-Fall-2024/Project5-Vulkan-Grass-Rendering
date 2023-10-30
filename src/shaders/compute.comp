@@ -7,6 +7,7 @@ layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 layout(set = 1, binding = 0) uniform Time {
@@ -21,36 +22,173 @@ struct Blade {
     vec4 up;
 };
 
-// TODO: Add bindings to:
-// 1. Store the input blades
-// 2. Write out the culled blades
-// 3. Write the total number of blades remaining
+layout(set = 2, binding = 0) buffer Blades {
+    Blade in_blades[];
+};
 
-// The project is using vkCmdDrawIndirect to use a buffer as the arguments for a draw call
-// This is sort of an advanced feature so we've showed you what this buffer should look like
-//
-// layout(set = ???, binding = ???) buffer NumBlades {
-// 	  uint vertexCount;   // Write the number of blades remaining here
-// 	  uint instanceCount; // = 1
-// 	  uint firstVertex;   // = 0
-// 	  uint firstInstance; // = 0
-// } numBlades;
+layout(set = 2, binding = 1) buffer CulledBlades {
+    Blade out_blades[];
+};
+
+layout(set = 2, binding = 2) buffer NumBlades {
+	uint vertexCount;
+    uint instanceCount;
+    uint firstVertex; 
+    uint firstInstance; 
+} numBlades;
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+vec3 random3(vec3 p) {
+    return fract(sin(vec3(dot(p, vec3(127.1, 311.7, 593.2)),
+                                         dot(p, vec3(269.5, 183.3, 293.4)),
+                                         dot(p, vec3(420.6, 631.2, 586.8))
+                                   )) * 43758.5453f);
+}
+
+float surflet3D(vec3 p, vec3 gridPoint) {
+    vec3 t2 = abs(p - gridPoint);
+    vec3 t = vec3(1.0) - 6.0 * vec3(pow(t2.x, 5.0), pow(t2.y, 5.0), pow(t2.z, 5.0))
+            + 15.0 * vec3(pow(t2.x, 4.0), pow(t2.y, 4.0), pow(t2.z, 4.0))
+            - 10.0 * vec3(pow(t2.x, 3.0), pow(t2.y, 3.0), pow(t2.z, 3.0));
+    vec3 gradient = random3(gridPoint) * 2.0 - vec3(1.0, 1.0, 1.0);
+    vec3 diff = p - gridPoint;
+    float height = dot(diff, gradient);
+    return height * t.x * t.y * t.z;
+}
+
+float perlinNoise3D(vec3 p) {
+    float surfletSum = 0.0;
+    for(int dx = 0; dx <= 1; ++dx) {
+        for(int dy = 0; dy <= 1; ++dy) {
+            for(int dz = 0; dz <= 1; ++dz) {
+                surfletSum += surflet3D(p, floor(p) + vec3(dx, dy, dz));
+            }
+        }
+    }
+    return surfletSum;
+}
+
+vec3 toNDC(vec4 p) {
+    p = camera.proj * camera.view * p;
+    p = p / p.w;
+    return p.xyz;
+}
+
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
-	barrier(); // Wait till all threads reach this point
+	barrier(); 
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    uint index = gl_GlobalInvocationID.x;
+
+    Blade b = in_blades[index];
+
+    vec3 v0 = b.v0.xyz;
+    vec3 v1 = b.v1.xyz;
+    vec3 v2 = b.v2.xyz;
+    vec3 up = b.up.xyz;
+
+    float o = b.v0.w;
+    float h = b.v1.w;
+    float w = b.v2.w;
+    float s = b.up.w;
+
+    // Recovery:
+
+    vec3 r = ((v0 + up * h) - v2) * s;
+
+    // Gravity:
+
+    vec3 gE = -3.0 * normalize(up);
+    vec3 gF = 0.25 * vec3(cos(o), 0.0, sin(o));
+
+    // Wind:
+    float windO = 3.1415926 * (1.0 + perlinNoise3D(vec3(v0.x, v0.z, totalTime)));
+    vec3 wind = vec3(cos(windO), 0.0, sin(windO));
+
+    v2 = v2 + deltaTime * (gE + gF + r + wind);
+    
+    // End:
+    v2 = v2 - up * min(dot(up, v2 - v0), 0.0);
+    float proj = length(v2 - v0 - up * dot(v2 - v0, up));
+    v1 = v0 + h * up * max(1 - proj / h, 0.05 * max(1, proj / h));
+
+    float L0 = distance(v2, v0);
+    float L1 = distance(v2, v1) + distance(v1, v0);
+
+    float L = (2.0 * L0 + L1) / 3.0;
+    float ratio = h / L;
+
+    v1 = v0 + ratio * (v1 - v0);
+    v2 = v1 + ratio * (v2 - v1);
+
+    b.v0 = vec4(v0, o);
+    b.v1 = vec4(v1, h);
+    b.v2 = vec4(v2, w);
+    b.up = vec4(up, s);
+
+    in_blades[index] = b;
 
 	// TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+
+    // Orientation
+
+    vec3 cam_position = (camera.invView * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+
+    vec3 viewDir = normalize(v0 - cam_position);
+    if (0.75 < abs(dot(vec3(viewDir.x, 0.0, viewDir.z), vec3(cos(o), 0.0, sin(o))))) {
+       return;
+    }
+
+    // View Frustum
+
+    vec4 m = vec4(0.25 * v0 + 0.5 * v1 + 0.25 * v2, 1.0);
+    vec3 h_v0 = toNDC(vec4(v0, 1.0));
+    vec3 h_m = toNDC(m);
+    vec3 h_v2 = toNDC(vec4(v2, 1.0));
+    bool keep = false;
+    if (!keep && inBounds(h_v0.x, 1) && inBounds(h_v0.y, 1) && h_v0.z > 0) {
+        keep = true;
+    }
+    if (!keep && inBounds(m.x, 1) && inBounds(m.y, 1) && m.z > 0) {
+        keep = true;
+    }
+    if (!keep && inBounds(h_v2.x, 1) && inBounds(h_v2.y, 1) && h_v2.z > 0) {
+        keep = true;
+    }
+    if (!keep) {
+        return;
+    }
+
+    // Distance
+
+    float proj_d = length(v0 - cam_position - up * (dot(v0 - cam_position, up)));
+    float max_d = 40.0;
+
+    if (proj_d > max_d) {
+        return;
+    } else if (proj_d > 0.75 * max_d) {
+        if (mod(gl_GlobalInvocationID.x, 2.0) < floor(2.0 * (1 - proj_d / max_d))) {
+            return;
+        }
+    } else if (proj_d > 0.625 * max_d) {
+        if (mod(gl_GlobalInvocationID.x, 3.0) < floor(3.0 * (1 - proj_d / max_d))) {
+            return;
+        }
+    } else if (proj_d > 0.5 * max_d) {
+        if (mod(gl_GlobalInvocationID.x, 6.0) < floor(6.0 * (1 - proj_d / max_d))) {
+            return;
+        }
+    }
+
+    const uint culledIndex = atomicAdd(numBlades.vertexCount, 1);
+    out_blades[culledIndex] = b;
 }

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-project(cis565_project4_vulkan_grass_rendering)
+project(cis565_project5_vulkan_grass_rendering)
 
 OPTION(USE_D2D_WSI "Build the project using Direct to Display swapchain" OFF)
 
