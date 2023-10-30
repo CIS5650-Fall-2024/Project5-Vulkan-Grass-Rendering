@@ -1,12 +1,25 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define PI_OVER_FOUR 0.7853981633974483f
+
+#define CULLING 1
+#define ORIENTATION_CULLING 1
+#define FRUSTUM_CULLING 1
+#define DISTANCE_CULLING 1
+
+#define ORIENTATION_CULLING_THRESHOLD 0.9
+#define FRUSTUM_CULLING_TOLERANCE 0.1
+#define DISTANCE_CULLING_DIST 60
+#define DISTANCE_CULLING_NUM_BUCKETS 8
+
 #define WORKGROUP_SIZE 32
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 layout(set = 1, binding = 0) uniform Time {
@@ -21,36 +34,144 @@ struct Blade {
     vec4 up;
 };
 
-// TODO: Add bindings to:
-// 1. Store the input blades
-// 2. Write out the culled blades
-// 3. Write the total number of blades remaining
+layout(set = 2, binding = 0) buffer Blades {
+    Blade blades[];
+};
 
-// The project is using vkCmdDrawIndirect to use a buffer as the arguments for a draw call
-// This is sort of an advanced feature so we've showed you what this buffer should look like
-//
-// layout(set = ???, binding = ???) buffer NumBlades {
-// 	  uint vertexCount;   // Write the number of blades remaining here
-// 	  uint instanceCount; // = 1
-// 	  uint firstVertex;   // = 0
-// 	  uint firstInstance; // = 0
-// } numBlades;
+layout(set = 2, binding = 1) buffer CulledBlades {
+    Blade culledBlades[];
+};
+
+layout(set = 2, binding = 2) buffer NumBlades {
+  uint vertexCount;   // Write the number of blades remaining here
+  uint instanceCount; // = 1
+  uint firstVertex;   // = 0
+  uint firstInstance; // = 0
+} numBlades;
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+bool pointInFrustum(vec3 p) {
+    vec4 pW = camera.proj * camera.view * vec4(p, 1);
+    float h = pW.w + FRUSTUM_CULLING_TOLERANCE;
+    return inBounds(pW.x, h) && inBounds(pW.y, h) && inBounds(pW.z, h);
+}
+
+const vec3 gE = vec3(0, -2, 0);
+
+vec3 random3(vec3 p) {
+    return fract(sin(vec3(dot(p, vec3(127.1, 311.7, 485.2)),
+                          dot(p, vec3(269.5, 183.3, 139.4)),
+                          dot(p, vec3(420.6, 631.2, 587.3))
+                      )) * 43758.5453f);
+}
+
+float surflet(vec3 p, vec3 gridPoint) {
+    // Compute the distance between p and the grid point along each axis, and warp it with a
+    // quintic function so we can smooth our cells
+    vec3 t2 = abs(p - gridPoint);
+    vec3 t = vec3(1.f) - 6.f * pow(t2, vec3(5.f)) + 15.f * pow(t2, vec3(4.f)) - 10.f * pow(t2, vec3(3.f));
+    // Get the random vector for the grid point
+    vec3 gradient = random3(gridPoint) * 2.f - vec3(1, 1, 1);
+    // Get the vector from the grid point to P
+    vec3 diff = p - gridPoint;
+    // Get the value of our height field by dotting grid->P with our gradient
+    float height = dot(diff, gradient);
+    // Scale our height field (i.e. reduce it) by our polynomial falloff function
+    return height * t.x * t.y * t.z;
+}
+
+float perlin(vec3 p) {
+    float surfletSum = 0.f;
+    // Iterate over the four integer corners surrounding uv
+    for(int dx = 0; dx <= 1; ++dx) {
+        for(int dz = 0; dz <= 1; ++dz) {
+            for (int dt = 0; dt <= 1; ++dt) {
+                surfletSum += surflet(p, floor(p) + vec3(dx, dz, dt));
+            }
+        }
+    }
+    return surfletSum;
+}
+
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
+    Blade thisBlade = blades[gl_GlobalInvocationID.x];
+    
+    vec3 v0 = thisBlade.v0.xyz;
+    vec3 v1 = thisBlade.v1.xyz;
+    vec3 v2 = thisBlade.v2.xyz;
+    vec3 up = thisBlade.up.xyz;
+
+    float theta = thisBlade.v0.w;
+    float h = thisBlade.v1.w;
+    float stiffness_coeff = thisBlade.up.w;
+
     // TODO: Apply forces on every blade and update the vertices in the buffer
+    vec3 f = vec3(cos(theta + PI_OVER_FOUR), 0, sin(theta + PI_OVER_FOUR));
+    vec3 gF = 0.25 * length(gE) * f;
+    vec3 g = gF + gE;
+
+    vec3 iv2 = v0 + h * up;
+    vec3 r = (iv2 - v2) * stiffness_coeff;
+
+    float wTheta = perlin(vec3(v2.x, v2.z, totalTime));
+    float wLen = max(0, perlin(vec3(v2.x, v2.z, totalTime) * 1.132)) * 10;
+    vec3 w = vec3(cos(wTheta), 0, sin(wTheta)) * wLen;
+
+    vec3 delta = (r + g + w) * deltaTime;
+
+    v2 += delta;
+    v2 = v2 - up * min(up * (v2 - v0), 0);
+    float lProj = length(v2 - v0 - up * dot(v2 - v0, up));
+    v1 = v0 + h * up * max(1 - lProj / h, 0.05 * max(lProj / h, 1));
+
+    float L0 = distance(v0, v2);
+    float L1 = distance(v0, v1) + distance(v1, v2);
+    float L = (L0 + L1) * 0.5;
+
+    float ratio = h / L;
+    vec3 v1_corr = v0 + ratio * (v1 - v0);
+    vec3 v2_corr = v1_corr + ratio * (v2 - v1);
+
+    thisBlade.v1.xyz = v1_corr.xyz;
+    thisBlade.v2.xyz = v2_corr.xyz;
+    blades[gl_GlobalInvocationID.x] = thisBlade;
 
 	// TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+    // orientation
+    
+    const vec3 dir_c = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
+    vec3 dir_b = vec3(cos(theta), 0, sin(theta));
+    if (abs(dot(dir_c, dir_b)) > ORIENTATION_CULLING_THRESHOLD) {
+        return;
+    }
+
+    // view in frustum
+    vec3 m = 0.25 * v0 * 0.5 * v1 * 0.25 * v2;
+    if (!pointInFrustum(v0) && !pointInFrustum(m) && !pointInFrustum(v2)) {
+        return;
+    }
+
+    // distance
+    const vec3 c = camera.invView[3].xyz;
+    float d_proj = length(v0 - c - up * dot(v0 - c, up));
+
+    if (gl_GlobalInvocationID.x % DISTANCE_CULLING_NUM_BUCKETS > floor(DISTANCE_CULLING_NUM_BUCKETS * (1 - d_proj / DISTANCE_CULLING_DIST))) {
+        return;
+    }
+    
+    // add to surviving blades
+    const uint culledIdx = atomicAdd(numBlades.vertexCount, 1);
+    culledBlades[culledIdx] = thisBlade;
 }

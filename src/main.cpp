@@ -1,4 +1,6 @@
 #include <vulkan/vulkan.h>
+#include <iomanip>
+#include <sstream>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
@@ -143,10 +145,29 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    int frames = 0;
+    float cumTime = 0;
+    float fps = 0;
+
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
+
+        float s = scene->GetDeltaTime();
+        ++frames;
+        if (cumTime >= 1.f) {
+            fps = static_cast<float>(frames) / cumTime;
+            cumTime = 0;
+            frames = 0;
+        }
+        else {
+            cumTime += s;
+        }
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2);
+        ss << "Vulkan Grass Rendering [" << fps << " fps, " << s * 1000.f << " ms/frame]";
+        glfwSetWindowTitle(GetGLFWWindow(), ss.str().c_str());
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());

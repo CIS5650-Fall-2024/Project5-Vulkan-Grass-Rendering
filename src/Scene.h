@@ -40,6 +40,7 @@ public:
     void AddBlades(Blades* blades);
 
     VkBuffer GetTimeBuffer() const;
+    float GetDeltaTime() const;
 
     void UpdateTime();
 };
