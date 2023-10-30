@@ -2,7 +2,7 @@ Touching Grass in Vulkan
 ==================================
 
 ![grass](img/submission/grass.gif)
-* Jason Xie, October 2023
+Jason Xie, October 2023
 
 ## About
 
