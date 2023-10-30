@@ -7,6 +7,7 @@ layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 invView;
 } camera;
 
 layout(set = 1, binding = 0) uniform Time {
@@ -21,36 +22,304 @@ struct Blade {
     vec4 up;
 };
 
-// TODO: Add bindings to:
-// 1. Store the input blades
-// 2. Write out the culled blades
-// 3. Write the total number of blades remaining
+// 1. All blades
 
-// The project is using vkCmdDrawIndirect to use a buffer as the arguments for a draw call
-// This is sort of an advanced feature so we've showed you what this buffer should look like
-//
-// layout(set = ???, binding = ???) buffer NumBlades {
-// 	  uint vertexCount;   // Write the number of blades remaining here
-// 	  uint instanceCount; // = 1
-// 	  uint firstVertex;   // = 0
-// 	  uint firstInstance; // = 0
-// } numBlades;
+layout(set = 2, binding = 0) buffer AllBlades
+{
+    Blade allBlades[];
+};
+// 2. Blades that are remaining after culling
+layout(set = 2, binding = 1) buffer RenderableBlades
+{
+    Blade renderableBlades[];
+};
+// 3. Write the total number of blades remaining
+layout(set = 2, binding = 2) buffer NumBlades {
+ 	  uint vertexCount;   // Write the number of blades remaining here
+ 	  uint instanceCount; // = 1
+ 	  uint firstVertex;   // = 0
+ 	  uint firstInstance; // = 0
+} numBlades;
+
+/* ============================= */
+/* ====== NOISE FUNCTIONS ====== */
+/* ============================= */
+
+// Most of these functions are from CIS 560 slides, slightly tweaked for this use case
+
+vec2 random2(vec2 p)
+{
+    return fract(sin(vec2(dot(p, vec2(127.1f, 311.7f)),
+                 dot(p, vec2(269.5f,183.3f))))
+                 * 43758.5453f);
+}
+
+float surflet2D(vec2 p, vec2 gridPoint)
+{
+    // Compute falloff function by converting linear distance to a polynomial
+    float distX = abs(p.x - gridPoint.x);
+    float distY = abs(p.y - gridPoint.y);
+    float tX = 1 - 6 * pow(distX, 5.f) + 15 * pow(distX, 4.f) - 10 * pow(distX, 3.f);
+    float tY = 1 - 6 * pow(distY, 5.f) + 15 * pow(distY, 4.f) - 10 * pow(distY, 3.f);
+    // Get the random vector for the grid point
+    vec2 rand = random2(gridPoint);
+    vec2 gradient = normalize(2.f * rand - vec2(1.f));
+    // Get the vector from the grid point to P
+    vec2 diff = p - gridPoint;
+    // Get the value of our height field by dotting grid->P with our gradient
+    float height = dot(diff, gradient);
+    // Scale our height field (i.e. reduce it) by our polynomial falloff function
+    return height * tX * tY;
+}
+
+float perlinNoise2D(vec2 p)
+{
+    float surfletSum = 0.f;
+    // Iterate over the four integer corners surrounding uv
+    for(int dx = 0; dx <= 1; ++dx) {
+        for(int dy = 0; dy <= 1; ++dy) {
+            surfletSum += surflet2D(p, floor(p) + vec2(dx, dy));
+        }
+    }
+    return surfletSum;
+}
+
+/* ==================== */
+/* ====== FORCES ====== */
+/* ==================== */
+
+#define BLADE_MASS 0.01f
+#define GRAVITY_DIRECTION vec3(0.0, 1.0, 0.0)
+#define GRAVITY_ACCELERATION -1.0f
+#define WIND_STRENGTH vec2(15.0, 0.0)
+
+#define WIND_SCROLL_SPEED vec2(1.0, 0.2)
+
+
+// This is inspired from Ghost of Tsushima's procedural grass system
+// source: https://www.youtube.com/watch?v=Ibe1JBF5i5Y
+vec3 getWindForce(const vec3 v0, const vec3 v2, const vec3 up, const float height)
+{
+    // We don't care about y value here, only scrolling perlin noise in the 2D XZ plane
+    vec2 uv = v0.xz;
+
+    // Scroll UV
+    uv += WIND_SCROLL_SPEED * totalTime;
+
+    // Get wind noise
+    float noise = perlinNoise2D(uv * 0.5f) * 0.5f;
+
+    vec2 wind2d = WIND_STRENGTH * noise;
+
+    vec3 windInfluence = vec3(wind2d.x, 0.0f, wind2d.y);
+
+    // Refer section 5.1 of paper
+    vec3 dir = v2 - v0;
+    float fd = 1.0 - abs(dot(normalize(windInfluence), normalize(dir)));
+    float fr = dot(dir, up) / height;
+    float theta = fd * fr;
+
+    return windInfluence * theta;
+}
+
+vec3 getExternalForces(const vec3 v0, const vec3 v1, const vec3 v2, const vec3 up, vec3 bitangent,
+                       const float angle, const float width, const float height, const float stiffnessCoeff)
+{
+    // This is how we initialize v2 in Blades.cpp
+    // If we change that initialization this will have to be changed!
+    const vec3 initialV2 = v0 + height * up;
+
+    // Apply forces on every blade and update the vertices in the buffer
+
+    // Recovery force
+    vec3 recoveryForce = (initialV2 - v2) * stiffnessCoeff * 0.5f;                                 // Hooke's Law
+
+    // Gravitational forces (main + front)
+    vec3 gravityEnvironmental = BLADE_MASS * GRAVITY_DIRECTION * GRAVITY_ACCELERATION;      // f = ma
+    vec3 front = normalize(cross(bitangent, up));
+    vec3 gravityFront = 0.25f * gravityEnvironmental * front;
+
+    vec3 gravity = gravityEnvironmental + gravityFront;
+
+    vec3 wind = getWindForce(v0, v2, up, height);
+
+    vec3 totalForce = (recoveryForce + gravity + wind) * deltaTime;
+    return totalForce;
+}
+
+void validateState(const vec3 v0, inout vec3 v1, inout vec3 v2, const vec3 up, const float height)
+{
+    vec3 dir = v2 - v0;
+    float dotDirUp = dot(dir, up);
+    v2 = v2 - up * min(dotDirUp, 0);      // maintain v2 above ground plane level
+    float lProj = length(dir - up * dotDirUp);
+
+    float lProjOverHeight = lProj / height;
+    v1 = v0 + height * up * max(1.0 - lProjOverHeight, 0.05f * max(lProjOverHeight, 1.0f));
+    
+    float L0 = distance(v0, v2);                            // distance between first and last control pt
+    float L1 = distance(v0, v1) + distance(v1, v2);         // sum of distance between all consecutive pts
+
+    // formula in paper is generalized L = (2 * L0 + (n-1) * L1) / (n+1)
+    // n is 3 in our case, so this simplifies to (2 * L0 + 2 * L1) / 4
+    // which simplifies to 2 * (L0 + L1) / 4 = (L0 + L1) / 2
+    float L = (L0 + L1) * 0.5f;
+    float r = height / L;
+
+    v1 = v0 + r * (v1 - v0);
+    v2 = v1 + r * (v2 - v1);
+}
+
+
+/* ==================== */
+/* ====== CULLING ===== */
+/* ==================== */
+
+#define ORIENTATION_CULLING 1
+#define FRUSTUM_CULLING 1
+#define DISTANCE_CULLING 1
+#define DO_ALL_CULLING_POST_PHYSICS 0
+
+#define ORIENTATION_CULLING_THRESHOLD 0.97
+#define FRUSTUM_CULLING_TOLERANCE -0.1f
+#define FRUSTUM_NEAR_CLIP 0.5
+#define FRUSTUM_FAR_CLIP 20        // this is also the "max distance" in distance culling.
+#define DISTANCE_CULLING_BUCKETS 40
+
+bool shouldOrientationCull(const vec3 bitangent)
+{
+    vec3 viewDir = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
+    if (abs(dot(viewDir, bitangent)) > ORIENTATION_CULLING_THRESHOLD)
+    {
+        return true;
+    }
+
+    return false;
+}
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+bool isPtInsideFrustum(vec3 p)
+{
+    vec4 pDash = camera.proj * camera.view * vec4(p, 1.0f);
+    float h = pDash.w + FRUSTUM_CULLING_TOLERANCE;
+
+    return inBounds(pDash.x, h) && inBounds(pDash.y, h) && pDash.z > FRUSTUM_NEAR_CLIP && pDash.z < FRUSTUM_FAR_CLIP;
+}
+
+bool shouldFrustrumCull(const vec3 v0, const vec3 v1, const vec3 v2)
+{
+    vec3 midPt = 0.25f * v0 + 0.5f * v1 + 0.25f * v2;
+    return !isPtInsideFrustum(v0) && !isPtInsideFrustum(midPt) && !isPtInsideFrustum(v2);
+}
+
+bool shouldDistanceCull(const uint idx, const vec3 v0, const vec3 up)
+{
+    vec3 c = camera.invView[3].xyz;
+    vec3 dir = v0 - c;
+    float dProj = length(dir - up * dot(dir, up));
+    return dProj > FRUSTUM_FAR_CLIP;
+    return idx % DISTANCE_CULLING_BUCKETS < floor(DISTANCE_CULLING_BUCKETS * (1.0f - dProj / FRUSTUM_FAR_CLIP));
+}
+
+// Some culling should happen before even evaluating physical forces
+// There's no reason to evaluate physics compute if the blade will be culled!
+// This is also something Ghost of Tsushima does
+bool shouldCullPrePhysics(const uint idx, const vec3 bitangent, const vec3 v0, const vec3 up)
+{
+#if DO_ALL_CULLING_POST_PHYSICS
+    return false;
+#endif
+
+    bool shouldCull = false;
+
+    #if ORIENTATION_CULLING
+    shouldCull = shouldCull || shouldOrientationCull(bitangent);
+    #endif
+
+    #if DISTANCE_CULLING
+    shouldCull = shouldCull || shouldDistanceCull(idx, v0, up);
+    #endif
+
+    return shouldCull;
+}
+
+bool shouldCullPostPhysics(const uint idx, const vec3 bitangent, const vec3 v0, const vec3 v1, const vec3 v2, const vec3 up)
+{
+    // Since frustum culling in the paper uses v2 and a midpoint, we can only do this AFTER the physical model has been evaluated and v2 been updated
+    bool shouldCull = false;
+
+#if DO_ALL_CULLING_POST_PHYSICS
+    #if ORIENTATION_CULLING
+    shouldCull = shouldCull || shouldOrientationCull(bitangent);
+    #endif
+
+    #if DISTANCE_CULLING
+    shouldCull = shouldCull || shouldDistanceCull(idx, v0, up);
+    #endif
+#endif
+
+    #if FRUSTUM_CULLING
+    shouldCull = shouldCull || shouldFrustrumCull(v0, v1, v2);
+    #endif
+
+    return shouldCull;
+}
+
+/* ==================== */
+/* ======= MAIN ======= */
+/* ==================== */
 void main() {
+    const uint currBladeIdx = gl_GlobalInvocationID.x;
+
 	// Reset the number of blades to 0
-	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+	if (currBladeIdx == 0) {
+		 numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
-    // TODO: Apply forces on every blade and update the vertices in the buffer
+    // Parameters
+    Blade currBlade = allBlades[currBladeIdx];
+    vec3 v0 = currBlade.v0.xyz;
+    vec3 v1 = currBlade.v1.xyz;
+    vec3 v2 = currBlade.v2.xyz;
+    const vec3 up = currBlade.up.xyz;
+    const float angle = currBlade.v0.w;
+    const float height = currBlade.v1.w;
+    const float width = currBlade.v2.w;
+    const float stiffnessCoeff = currBlade.up.w;
+    vec3 bitangent = normalize(vec3(cos(angle), 0.0f, sin(angle)));
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
+    // Cull blades before the physical model
+    if (shouldCullPrePhysics(currBladeIdx, bitangent, v0, up))
+    {
+        return;
+    }
+
+    // Get total force
+    vec3 totalForce = getExternalForces(v0, v1, v2, up, bitangent, angle, width, height, stiffnessCoeff);
+    v2 += totalForce;
+
+    // State validation (section 5.2 of paper)
+    validateState(v0, v1, v2, up, height);
+
+    currBlade.v1.xyz = v1;
+    currBlade.v2.xyz = v2;
+    allBlades[currBladeIdx] = currBlade;
+
+	// Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+
+    // Cull blades
+    if (shouldCullPostPhysics(currBladeIdx, bitangent, v0, v1, v2, up))
+    {
+        return;
+    }
+
+    uint idx = atomicAdd(numBlades.vertexCount, 1);
+    renderableBlades[idx] = currBlade;
 }

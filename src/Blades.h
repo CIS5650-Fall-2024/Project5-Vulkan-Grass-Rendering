@@ -7,10 +7,10 @@
 constexpr static unsigned int NUM_BLADES = 1 << 13;
 constexpr static float MIN_HEIGHT = 1.3f;
 constexpr static float MAX_HEIGHT = 2.5f;
-constexpr static float MIN_WIDTH = 0.1f;
-constexpr static float MAX_WIDTH = 0.14f;
+constexpr static float MIN_WIDTH = 0.05f;
+constexpr static float MAX_WIDTH = 0.07f;
 constexpr static float MIN_BEND = 7.0f;
-constexpr static float MAX_BEND = 13.0f;
+constexpr static float MAX_BEND = 10.0f;
 
 struct Blade {
     // Position and direction
@@ -72,17 +72,17 @@ struct BladeDrawIndirect {
 class Blades : public Model {
 private:
     VkBuffer bladesBuffer;
-    VkBuffer culledBladesBuffer;
+    VkBuffer renderableBladesBuffer;
     VkBuffer numBladesBuffer;
 
     VkDeviceMemory bladesBufferMemory;
-    VkDeviceMemory culledBladesBufferMemory;
+    VkDeviceMemory renderableBladesBufferMemory;
     VkDeviceMemory numBladesBufferMemory;
 
 public:
     Blades(Device* device, VkCommandPool commandPool, float planeDim);
     VkBuffer GetBladesBuffer() const;
-    VkBuffer GetCulledBladesBuffer() const;
+    VkBuffer GetRenderableBladesBuffer() const;
     VkBuffer GetNumBladesBuffer() const;
     ~Blades();
 };

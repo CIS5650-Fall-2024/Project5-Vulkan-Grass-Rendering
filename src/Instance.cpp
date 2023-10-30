@@ -258,6 +258,9 @@ void Instance::PickPhysicalDevice(std::vector<const char*> deviceExtensions, Que
             }
         }
 
+        VkPhysicalDeviceProperties props;
+        vkGetPhysicalDeviceProperties(device, &props);
+
         if (requiredQueues[QueueFlags::Present]) {
             // Get basic surface capabilities
             vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &surfaceCapabilities);
