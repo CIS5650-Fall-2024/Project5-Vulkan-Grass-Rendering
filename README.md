@@ -35,6 +35,7 @@ We pack all this data into four `vec4`s, such that `v0.w` holds orientation, `v1
 Below is an overview of the basic Vulkan pipeline from the [Vulkan documentation](https://docs.vulkan.org/spec/latest/chapters/pipelines.html).
 
 ![](img/vulkanPipeline.png)
+
 *Figure 3. Vulkan Pipeline Diagram*
 
 For this project, we are already provided with a basic Vulkan setup, including a compute pipeline that will run our compute shaders and two graphics pipelines, one for rendering the geometry that grass will be placed on and the other for rendering the grass itself. Our focus is to write the shaders for the grass graphics pipeline (`grass.vert`, `grass.tesc`, `grass.tese` and `grass.frag`) and the compute pipeline (`compute.comp`), as well as binding necessary resources (descriptors) to accomplish the tasks above.
@@ -42,6 +43,7 @@ For this project, we are already provided with a basic Vulkan setup, including a
 **Courtesy of an amazing CGGT alumni [Rhuta Joshi](https://github.com/rcj9719/gpu-vulkan-grass-rendering/)**, the following diagram shows clearly the workflow at different stages of the Vulkan pipeline in order to render and simulate realistic grass.
 
 ![](/img/vulkanGrassPipeline.png)
+
 *Figure 4. Vulkan Grass Pipeline Diagram*
 
 ### Tessellation
@@ -52,6 +54,7 @@ Tessellation is the vertex processing stage in a graphics pipeline where patches
 Our TCS `grass.tesc` takes an input patch of blade's 3 control points, and emits an output patch. Additionally, we set the tessellation levels in TCS to determine how many triangles will be generated for each patch. Note that we are using quads (a normalized square of 2D coordinates in the range of 0-1) as our patch domain, specified in the `layout` seciton of out TES `grass.tese`. This means that all 4 outer and 2 inner tessellation levels are used (Figure 5).
 
 ![](/img/quadLevels.png)
+
 *Figure 5. Tessellation Level Diagram for Quads*
 
 Next, in TES `grass.tese` we can decide the actual clip space vertex positions using De Casteljau's algorithm. The table below shows the process of remapping the tessellated vertices within a quad to shape it like a gradd blade.
@@ -60,7 +63,7 @@ Next, in TES `grass.tese` we can decide the actual clip space vertex positions u
 |---|---
 ![](/img/results/quadPatch.png) | ![](/img/results/remappedPatch.png)
 
-It comes to our first grass blade:
+Then it comes to our first grass blade:
 
 ![](/img/results/firstBlade.png)
 
@@ -120,7 +123,9 @@ Although we need to simulate forces on every grass blade at every frame, there a
 ### Orientation
 Consider the scenario in which the front face direction of the grass blade is perpendicular to the view vector. Since our grass blades have no thickness, we will end up trying to render parts of the grass that are actually smaller than the size of a pixel. This could lead to aliasing artifacts.
 
-In order to remedy this, we can cull these blades! Simply do a dot product test to see if the view vector and front face direction of the blade are perpendicular. The demo gif below has a threshold value of `0.6` just so I can show how prominent the impact orientation culling can have. It's up to the developer's choice how you effective you want your orientation culling to be.
+In order to remedy this, we can cull these blades! Simply do a dot product test to see if the view vector and front face direction of the blade are perpendicular. 
+
+The demo gif below has a threshold value of `0.6` just so I can show how prominent the impact orientation culling can have. It's up to the developer's choice how you effective you want your orientation culling to be.
 
 ![](/img/results/orientCulling.gif)
 
@@ -129,7 +134,9 @@ We also want to cull blades that are outside of the camera's view-frustum, consi
 
 Notice that we aren't using `v1` for the visibility test. This is because the `v1` is a Bezier guide that doesn't represent a position on the grass blade. We instead use `m` to approximate the midpoint of our Bezier curve.
 
-If all three points are outside of the view-frustum, we cull the grass blade. The paper uses a tolerance value `0.1` for this test so that we are culling blades a little more conservatively. This can help with cases in which the Bezier curve is technically not visible, but we might be able to see the blade if we consider its width. The gif below has a tolerance value of `-3` just for demonstration purposes.
+If all three points are outside of the view-frustum, we cull the grass blade. The paper uses a tolerance value `0.1` for this test so that we are culling blades a little more conservatively. This can help with cases in which the Bezier curve is technically not visible, but we might be able to see the blade if we consider its width. 
+
+The gif below has a tolerance value of `-3` just for demonstration purposes.
 
 ![](/img/results/frustumCulling.gif)
 
@@ -147,8 +154,21 @@ The demo gif below uses a `MAX_DIST` of `30.0` and a `NUM_DIST_LEVEL` of `10`.
 ![](/img/results/distCulling.gif)
 
 ## Performance Analysis
+For all the test cases I set both the inner and outer tessellation levels to 8. Test cases that involve any culling method has the same configuration below:
+
+```
+orientation threshold = 0.6, frustum tolerance = 0.2, maximum distance = 20.0 and number of distance levels = 10
+```
 ### Varying Number of Blades
+To see how my renderer handles various number of grass blades, I compared the FPS difference with an increasing number of grass blades. I placed the camera slightly above the default position so that most of the grass can be seen. I measured the frame rate with both culling turned off and all three culling methods on.
+
 ![](/img/results/fps-numBlades.png)
 
+As expected, frame rates drop dramatically with an increasing amount of grass blades, no matter whether culling is integrated. With all three types of culling tests on, we can achieve a performance boost by 20~60 percent, especially when the number of blades exceeds 2<sup>12</sup>. While how much culling-ON outperforms culling-OFF may depend on how rigrous the culling tests are, this phenomenon is still reasonable because when there are only a few grass blades, the computational and rendering time is relatively insignificant in comparison to the time allocated to other aspects of the program, notably the synchronization between the CPU and GPU.
+
 ### Different Culling Tests
+To see how different culling tests contribute to performance, I compare the FPS difference with each culling test. In addition, I also zoomed in half way until my camera can't zoom in more, and place the camera farther away from the ground plane, to test the influence of camera motion on both view-frustum culling and distance culling, respectively. 
+
 ![](/img/results/fps-culling.png)
+
+Distance culling and orientation culling has similar contributions while frustum culling seems to have no benefit, even slower. This is because with the initial camera settings, all the grass blades are visible/ reside within the view frustum so we are still updating every single blade every frame, except that now we are performing extra computation. The closer the camera is to the scene, the more significant view-frustum culling has impact on the performance because more grass are cut out of the screen and not rendered. Conversely, the farther the camera is, the better distance culling performs since more grass to be culled is beyond the maximum distance.
