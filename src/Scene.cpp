@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Scene.h"
 #include "BufferUtils.h"
 
@@ -32,6 +33,13 @@ void Scene::UpdateTime() {
     time.totalTime += time.deltaTime;
 
     memcpy(mappedData, &time, sizeof(Time));
+
+    //fps stdout
+    fps_sum -= fps_arr[fps_arr_idx];
+    fps_arr[fps_arr_idx] = 1.f / time.deltaTime;
+    fps_sum += fps_arr[fps_arr_idx];
+    fps_arr_idx = (fps_arr_idx + 1) % 100;
+    std::cout << (fps_sum / 100.f) << std::endl;
 }
 
 VkBuffer Scene::GetTimeBuffer() const {
