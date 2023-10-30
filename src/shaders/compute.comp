@@ -115,6 +115,7 @@ void main() {
     float stiffness_coeff = thisBlade.up.w;
 
     // TODO: Apply forces on every blade and update the vertices in the buffer
+    
     vec3 f = vec3(cos(theta + PI_OVER_FOUR), 0, sin(theta + PI_OVER_FOUR));
     vec3 gF = 0.25 * length(gE) * f;
     vec3 g = gF + gE;
@@ -122,8 +123,8 @@ void main() {
     vec3 iv2 = v0 + h * up;
     vec3 r = (iv2 - v2) * stiffness_coeff;
 
-    float wTheta = perlin(vec3(v2.x, v2.z, totalTime));
-    float wLen = max(0, perlin(vec3(v2.x, v2.z, totalTime) * 1.132)) * 10;
+    float wTheta = perlin(vec3(v2.x, v2.z, totalTime * 0.3));
+    float wLen = abs(perlin(vec3(v2.x, v2.z, totalTime * 0.2))) * 10;
     vec3 w = vec3(cos(wTheta), 0, sin(wTheta)) * wLen;
 
     vec3 delta = (r + g + w) * deltaTime;
@@ -148,7 +149,7 @@ void main() {
 	// TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
-	// You want to write the visible blades to the buffer without write conflicts between threads
+	// You want to write the visible bl  ades to the buffer without write conflicts between threads
     // orientation
     
     const vec3 dir_c = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
@@ -156,13 +157,13 @@ void main() {
     if (abs(dot(dir_c, dir_b)) > ORIENTATION_CULLING_THRESHOLD) {
         return;
     }
-
+    
     // view in frustum
     vec3 m = 0.25 * v0 * 0.5 * v1 * 0.25 * v2;
     if (!pointInFrustum(v0) && !pointInFrustum(m) && !pointInFrustum(v2)) {
         return;
     }
-
+    
     // distance
     const vec3 c = camera.invView[3].xyz;
     float d_proj = length(v0 - c - up * dot(v0 - c, up));
