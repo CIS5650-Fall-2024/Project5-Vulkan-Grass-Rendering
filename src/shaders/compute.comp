@@ -62,7 +62,10 @@ void main() {
 
     // DONE: Apply forces on every blade and update the vertices in the buffer
 
+    bool cullTest = true;
     Blade currBlade = blades.blades[gl_GlobalInvocationID.x];
+
+    
     vec3 bitangent = vec3(cos(currBlade.v0.w), 0, sin(currBlade.v0.w));
     vec3 v0 = currBlade.v0.xyz;
     vec3 v1 = currBlade.v1.xyz;
@@ -95,22 +98,21 @@ void main() {
     currBlade.v2.xyz = v2;
     blades.blades[gl_GlobalInvocationID.x] = currBlade;
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
+	// DONE: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
-    vec3 viewForward = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
-    bool cullTest = true;
-
     
-    // vec3 tangent = normalize(v1 - v0);
-    // vec3 normal = normalize(cross(tangent, bitangent));
-
+    vec3 viewForward = vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
+    
     // 1.orientation test
     if(abs(dot(normalize(bitangent.xz), normalize(viewForward.xz))) > 0.9){
         cullTest = false;
-    }else{
-        // 2.view frustrum test
+    }
+
+    
+    // 2.view frustrum test
+    if(cullTest){
         vec3 m = 0.25 * v0 + 0.5 * v1 + 0.25 * v2;
         mat4 vp = camera.proj * camera.view;
         vec4 v0_p = vp * vec4(v0, 1);
@@ -126,18 +128,23 @@ void main() {
             || ((inBounds(v2_p.x, h2) && inBounds(v2_p.y, h2) && inBounds(v2_p.z, h2)))
         )){
             cullTest = false;
-        }else{
-            // 3.Distance test
-            vec3 cam = (inverse(camera.view) * vec4(0, 0, 0, 1)).xyz;
-            float d_proj = length(v0 - cam - up * dot((v0 - cam), up));
-            float d_max = 25;
-            uint n = 8;
-            int level = int(floor(n * (1.0 - d_proj / d_max)));
-            if(int(gl_GlobalInvocationID.x % n) > level){
-                cullTest = false;
-            }
         }
     }
+
+    
+    // 3.Distance test
+    if(cullTest){
+        vec3 cam = (inverse(camera.view) * vec4(0, 0, 0, 1)).xyz;
+        float d_proj = length(v0 - cam - up * dot((v0 - cam), up));
+        float d_max = 25;
+        uint n = 8;
+        int level = int(floor(n * (1.0 - d_proj / d_max)));
+        if(int(gl_GlobalInvocationID.x % n) > level){
+            cullTest = false;
+        }
+    }
+    
+    
     
     if(cullTest){
         uint oriVertexCount = atomicAdd(numBlades.vertexCount, 1);
