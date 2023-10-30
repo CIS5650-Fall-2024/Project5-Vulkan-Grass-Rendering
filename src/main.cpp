@@ -1,4 +1,5 @@
 #include <vulkan/vulkan.h>
+#include <string>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
@@ -143,7 +144,26 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    double fps = 0.0;
+    double lastTime = 0.0f;
+    int frames = 0;
+
+    std::string s;
+
     while (!ShouldQuit()) {
+        frames++;
+        double curTime = glfwGetTime();
+
+        if (curTime - lastTime >= 1.0)  // 1 second passed
+        {
+            fps = static_cast<double>(frames) / (curTime - lastTime);
+            lastTime = curTime;
+            frames = 0;
+        }
+
+        s = ("Vulkan Grass Renderer | FPS: ") + std::to_string(fps);
+        glfwSetWindowTitle(GetGLFWWindow(), s.c_str());
+
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
