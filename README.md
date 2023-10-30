@@ -24,7 +24,7 @@ First, with tessellation, we can get static grass with correct shape.
  <img src="img/1-tessellation.png" width = "320" height = "260">
 </div>
 
-Then, the wind force function is implemented in compute shader, which bend the grass.
+Then, the time-changing force functions (wind, gravity, recovery) is implemented in compute shader, which bend the grass.
 <div align = center>
  <img src="img/2-wind.png" width = "320" height = "260">
 </div>
