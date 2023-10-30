@@ -12,29 +12,42 @@ Vulkan Grass Rendering
 In this project, I use Vulkan to implement a grass simulator and renderer. The culling and wind deformation is calculated in compute shader, and the interpolation is done in tessellation shader to get the acurate grass blade shape from Bezier curve dynamically.
 
 Fianl Result:
-![](/img/grass_wind.gif)
+
+<div align = center>
+ <img src="img/grass_wind.gif">
+</div>
 
 ### Implementation Stages
 
 First, with tessellation, we can get static grass with correct shape.
-![](/img/1-tessellation.png)
+<div align = center>
+ <img src="img/1-tessellation.png" width = "320" height = "260">
+</div>
 
 Then, the wind force function is implemented in compute shader, which bend the grass.
-![](/img/2-wind.png)
+<div align = center>
+ <img src="img/2-wind.png" width = "320" height = "260">
+</div>
 
 Then, unnecessary grass baldes are culled out with three cull test.
 
 Orientation Test:  Cull grass baldes that nearly parpendicular to camera.
-![](/img/2_orientation_test.gif)
+<div align = center>
+ <img src="img/2_orientation_test.gif" width = "320" height = "260">
+</div>
 
 View frustrum Test:  Cull grass blades that outside the view frustrum.
 
 (There are grass showed up on the edge of view frustrum.)
-![](/img/3_view_test.gif)
-![](/img/3_view_test_2.gif)
+<div align = center>
+ <img src="img/3_view_test.gif" width = "320" height = "260">
+ <img src="img/3_view_test_2.gif" width = "320" height = "260">
+</div>
 
 View frustrum Test:  Cull grass blades according to distance. A further grass blade has higher chance to be culled out.
-![](/img/4_distance_test.gif)
+<div align = center>
+ <img src="img/4_distance_test.gif" width = "320" height = "260">
+</div>
 
 ### Analysis
 
