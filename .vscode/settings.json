@@ -1,0 +1,17 @@
+{
+    "ros.distro": "humble",
+    "files.associations": {
+        "*.sdf": "xml",
+        "*.world": "xml",
+        "*.gltf": "json",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "ranges": "cpp",
+        "*.ipp": "cpp",
+        "bitset": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "valarray": "cpp"
+    }
+}
