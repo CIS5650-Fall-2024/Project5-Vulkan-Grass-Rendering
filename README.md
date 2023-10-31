@@ -8,3 +8,8 @@ Vulkan Grass Rendering
 * Tested on: Windows 11, i7-12700k 32GB, GTX 4090 24GB
 
 ## Intro
+The project use vulkan to implement of the paper, Responsive Real-Time Grass Rendering for General 3D Scenes.
+
+![](./img/demo1.gif)
+
+## Features
