@@ -39,7 +39,7 @@ This application simulates the effects of gravity, recovery, and wind on grass b
 
 | Gravity & Recovery | Gravity, Recovery & Wind |
 |:------------------:|:-------------------------:|
-| ![Recovery Pic](/img/recovery_no_cull.png) | ![Wind GIF](#)           |
+| ![Recovery Pic](/img/recovery_no_cull.png) | ![Wind GIF](/img/wind_no_cull.gif)          |
 
 ### Culling Optimization
 
@@ -55,13 +55,13 @@ To enhance performance and minimize the number of grass blades rendered, the app
 
 |  Original (No Culling) | Orientation Test |
 |:------------------:|:------------:|
-|  ![Original GIF](#)  | ![Orien Test](#) |
+|  ![Original GIF](/img/wind_no_cull.gif)  | ![Orien Test](/img/orientation_cull.gif) |
 
 ##### View-Frustum and Distance Tests
 
 |  View-Frustum Test | Distance Test |
 |:------------------:|:------------:|
-|  ![VF Test](#)  | ![Distance GIF](#) |
+|  ![VF Test](/img/frustum_cull.gif)  | ![Distance GIF](/img/distance_cull.gif) |
 
 ## Performance Analysis
 
