@@ -7,7 +7,7 @@
 
 ## Summary
 
-![Demo GIF](#)
+![Demo GIF](/img/demo.gif)
 
 This project is a Vulkan-based application designed to render realistic grass with an integrated physics simulation, utilizing compute shaders. The implementation is inspired by the techniques described in the paper [Responsive Real-Time Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf).
 
@@ -33,13 +33,13 @@ This application simulates the effects of gravity, recovery, and wind on grass b
 
 |  Original (No Force) | Gravity Only |
 |:--------------------:|:-------------:|
-| ![No Force Pic](#)   | ![Gravity Pic](#) |
+| ![No Force Pic](/img/no_force_no_cull.png)   | ![Gravity Pic](/img/gravity_no_cull.png) |
 
 #### Comprehensive Forces
 
 | Gravity & Recovery | Gravity, Recovery & Wind |
 |:------------------:|:-------------------------:|
-| ![Recovery Pic](#) | ![Wind GIF](#)           |
+| ![Recovery Pic](/img/recovery_no_cull.png) | ![Wind GIF](#)           |
 
 ### Culling Optimization
 
