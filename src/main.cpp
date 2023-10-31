@@ -145,43 +145,11 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
-    //while (!ShouldQuit()) {
-    //    glfwPollEvents();
-    //    scene->UpdateTime();
-    //    renderer->Frame();
-    //}
-
-    double prevTime = 0.0;
-    double crntTime = 0.0;
-    double timeDiff;
-    // Keeps track of the amount of frames in timeDiff
-    unsigned int counter = 0;
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
-        crntTime = glfwGetTime();
-        timeDiff = crntTime - prevTime;
-        counter++;
-
-        if (timeDiff >= 1.0 / 30.0)
-        {
-            // Creates new title
-            std::string FPS = std::to_string((1.0 / timeDiff) * counter);
-            std::string ms = std::to_string((timeDiff / counter) * 1000);
-            std::string newTitle = FPS + "FPS / " + ms + "ms";
-            glfwSetWindowTitle(GetGLFWWindow(), newTitle.c_str());
-
-            // Resets times and counter
-            prevTime = crntTime;
-            counter = 0;
-
-            // Use this if you have disabled VSync
-            //camera.Inputs(window);
-
-        }
     }
-
 
 
     vkDeviceWaitIdle(device->GetVkDevice());
