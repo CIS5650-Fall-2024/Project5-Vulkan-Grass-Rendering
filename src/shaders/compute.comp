@@ -109,10 +109,11 @@ void main() {
     inBlades[gl_GlobalInvocationID.x].v1.xyz = v1;
     inBlades[gl_GlobalInvocationID.x].v2.xyz = v2;
 
+vec3 cameraLoc = -camera.view[3].xyz;
+
 #if ORIENTATION_CULLING
     //Orientation Culling
-    vec3 cameraForward = normalize(vec3(camera.view[0].z, camera.view[1].z, camera.view[2].z));
-    vec3 cameraLoc = -camera.view[3].xyz;
+    vec3 cameraForward = normalize(vec3(camera.view[0].z, camera.view[1].z, camera.view[2].z));    
     cameraForward = normalize(v0 - cameraLoc);
     if(abs(dot(orient, cameraForward)) > 0.9) {
         return;
