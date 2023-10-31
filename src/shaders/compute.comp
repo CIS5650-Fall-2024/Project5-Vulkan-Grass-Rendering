@@ -55,20 +55,8 @@ bool inBounds(float value, float bounds) {
 }
 
 vec3 generateRandomWind(vec3 v0, float totalTime) {
-	// Basic wind strength that varies with time
-    float strength = 2.0 + 1.0 * sin(totalTime * 0.2);
-
-    // Random wind direction components
-    float randX = fract(sin(v0.x * 12.9898 + 78.233) * 43758.5453);
-    float randZ = fract(cos(v0.z * 4.898 + 54.233) * 29758.5453);
-
-    // Normalize the random direction vector (excluding Y for horizontal wind)
-    vec3 windDir = normalize(vec3(randX - 0.5, 0.0, randZ - 0.5));
-    
-    // Apply the strength to the wind direction
-    vec3 wind = strength * windDir;
-
-    return wind;
+  return vec3(3 * (1 + sin(0.5 * (0.6 * v0.x + totalTime))), 0.0,
+        (cos(0.7 * (v0.z + totalTime))));
 }
 
 bool isInBounds(vec4 p, float tolerance) {
@@ -79,7 +67,7 @@ bool isInBounds(vec4 p, float tolerance) {
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
@@ -108,7 +96,7 @@ void main() {
 	gravity = gE + gF;
 #endif /*APPLY_GRAVITY*/
 #ifdef APPLY_RECOVERY
-	vec3 Iv2 = v0 * height * up;
+	vec3 Iv2 = v0 + height * up;
 	recovery = (Iv2 - v2) * stiffness;
 #endif /*APPLY_RECOVERY*/
 #ifdef APPLY_WIND
