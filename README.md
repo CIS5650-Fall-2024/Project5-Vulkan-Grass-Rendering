@@ -69,10 +69,25 @@ To enhance performance and minimize the number of grass blades rendered, the app
 
 The quantity of grass blades significantly affects rendering performance. Below is an analysis of Frames Per Second (FPS) against various blade counts.
 
-![FPS vs #Blades](#)
+![FPS vs #Blades](/img/fps_blades.png)
+
+This plot shows the fps under different number of blades with all culling mode disabled.
+
+From above plot, we can see that when the number of blades is small (< $2^{13}$), fps is relative stable (~1000 fps). In this case, the bottleneck for rendering is not the number of blades. After this point, as the number of blades increased, the fps drops quickly, since when there are too many blades to be rendered, the computation becomes intense, and the number of blades becomes the bottleneck of scene rendering.
 
 ### Efficiency of Culling Techniques
 
 Culling helps in reducing the rendering workload by limiting the number of grass blades processed.
 
-![FPS vs Culling Methods](#)
+![FPS vs Culling Methods](/img/fps_culling.png)
+
+This plot shows the fps under different culling modes with number of blades equals to $2^{15}$, and all fps value is recorded without changing camera position.
+
+From above plot, we can see that without any culling, the fps is low since all blades need to be rendered. When enable orientation culling, rendering performance is better since the blades are all 2D and we will not render the blades whose orientation is aligned with the direction of camera view, and this reducing the rendering workload the most among three culling modes. 
+
+With distance culling enabled, we can also see the improvement of performance in rendering the grass. This fps value is related to the distance between the grass and the camera. When the camera is distant from the grass, the number of blades need to be rendered is smaller, and thus the fps is higher (~1000 when the camera is too far and no blades need to be rendered).
+
+When enabling frustum culling, and dive into the grass, we can see the fps is higher compared with looking the overall grassland, since when we dive into the grass, the blades out of the scope will not be rendered.
+
+With all culling modes enabled, the fps is much higher than any of other scenario, since we exclude all blades that do not need to be rendered, thus improving the performance a lot.
+
