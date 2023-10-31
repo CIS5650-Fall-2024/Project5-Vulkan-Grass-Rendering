@@ -13,11 +13,11 @@ Vulkan Grass Rendering
 | ***2<sup>15</sup> grass blades, tesselation level = 8*** |
 
 ## Summary
-This Vulkan-based project is based on the paper [Responsive Real-Time Grass Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf). The paper, and thus this project, utilizes the power of tesselation and compute shaders along with a physical model for the grass blades to allow real-time rendering of a large number of grass blades at interactive rates. [Rhuta Joshi](https://sites.google.com/view/rhuta-joshi), a 2023 graduate from the same Masters program as myself, did an excellent job in explaining the pipeline for the project:  
+This Vulkan-based project is based on the paper [Responsive Real-Time Grass Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf). The paper, and thus this project, utilizes the power of tesselation and compute shaders along with a physical model for the grass blades to allow real-time rendering of a large number of grass blades at interactive rates. [Rhuta Joshi](https://sites.google.com/view/rhuta-joshi), a 2023 graduate from the same Masters program as myself, did an excellent job in summarizing the pipeline for the project:  
 ![](https://github.com/rcj9719/gpu-vulkan-grass-rendering/blob/main/img/vulkanGrassPipeline.png)
 
 ## The Physical Model
-<img src="img/blade_model.jpg" width=300>  
+<img src="img/blade_model.jpg" width=500>  
 
 In this project, each grass blade is represented as a Bezier curve that is then used for performing physics calculations and culling operations.   
 Each Bezier curve is defined by control points:
@@ -49,13 +49,13 @@ On the other hand, our tesselation evaluation shader `grass.tese` expects quads 
 `layout(quads, equal_spacing, ccw) in;`  
 This means that for each input point from the control shader, the Primitive Generator generates quads which are tesselated according to the level defined by the control shader. Referring to some of the remapping functions mentioned in the paper, we are then able to remap the generated quad into a triangular shape to better match the shape of a leaf blade. 
 
-| <img src="captures/geom1.png" width=365> | <img src="captures/geom2.png" width=300> |
+| <img src="captures/geom1.png" width=300> | <img src="captures/geom2.png" width=300> |
 |:--:|:--:|
 | *Tesselated Quads generated per input primitive* | *Quads remapped to triangles to better represent grass leaves* |
 
 ### Level of Detail
 Our tesselation pipeline is defined by the tesselation control shader `grass.tesc` and the tesselation evaluation shader `grass.tese`. This was my first time working with tesselation shaders, and as an opportunity to learn more about the power they are able to provide in terms of level of detail, I aimed to define the tesselation levels for each blade of the triangle based on the distance from the camera.  
-<img src="captures/lod.gif" width=350>  
+<img src="captures/lod.gif" width=500>  
 As can be seen above, the tesselation level for a blade of triangle increases as it reaches closer to the camera.
 
 ## Rendering Optimizations - Culling
@@ -64,7 +64,7 @@ As explained in the paper, we perform 3 different types of culling to gain poten
 2. **View-Frustum Culling:** This method culls the grass blades that lie outside our viewing frustum. This feature can be toggled using the `FRUSTUM_CULLING` preprocessor directive in `compute.comp`, and the tolerance value for the same can be set by choosing an appropriate value for the `tolerance` identifier in the compute shader.
 3. **Distance Culling:** This method culls the grass blade that lie outside a certain threshold distance to avoid rendering costs for small grass blades as well as artifacts. This feature can be toggled using the `DISTANCE_CULLING` preprocessor directive in `compute.comp`.
 
-| <img src="captures/cull_ori.gif" width=300> | <img src="captures/cull_frus.gif" width=350> | <img src="captures/cull_dist.gif" width=350> |
+| <img src="captures/cull_ori.gif" width=350> | <img src="captures/cull_frus.gif" width=350> | <img src="captures/cull_dist.gif" width=350> |
 |:--:|:--:|:--:|
 | *Orientation Culling* | *View Frustum Culling* | *Distance Culling* |
 
