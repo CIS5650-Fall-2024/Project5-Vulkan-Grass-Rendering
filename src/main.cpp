@@ -5,6 +5,8 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "Image.h"
+#include<iostream>
+#include<string>
 
 Device* device;
 SwapChain* swapChain;
@@ -88,7 +90,7 @@ int main() {
 
     device = instance->CreateDevice(QueueFlagBit::GraphicsBit | QueueFlagBit::TransferBit | QueueFlagBit::ComputeBit | QueueFlagBit::PresentBit, deviceFeatures);
 
-    swapChain = device->CreateSwapChain(surface, 5);
+    swapChain = device->CreateSwapChain(surface, 5); //means render up to 5 frames ahead of what's currently being displayed
 
     camera = new Camera(device, 640.f / 480.f);
 
@@ -124,8 +126,8 @@ int main() {
             { { halfWidth, 0.0f, halfWidth }, { 0.0f, 1.0f, 0.0f },{ 0.0f, 0.0f } },
             { { halfWidth, 0.0f, -halfWidth }, { 0.0f, 0.0f, 1.0f },{ 0.0f, 1.0f } },
             { { -halfWidth, 0.0f, -halfWidth }, { 1.0f, 1.0f, 1.0f },{ 1.0f, 1.0f } }
-        },
-        { 0, 1, 2, 2, 3, 0 }
+        }, //Vertices: position, color, uv
+        { 0, 1, 2, 2, 3, 0 } // indices: draw triangle 0, 1, 2 then 2,3,0
     );
     plane->SetTexture(grassImage);
     
@@ -149,10 +151,12 @@ int main() {
         renderer->Frame();
     }
 
+
     vkDeviceWaitIdle(device->GetVkDevice());
 
     vkDestroyImage(device->GetVkDevice(), grassImage, nullptr);
     vkFreeMemory(device->GetVkDevice(), grassImageMemory, nullptr);
+    vkDestroySurfaceKHR(instance->GetVkInstance(), surface, nullptr);
 
     delete scene;
     delete plane;
