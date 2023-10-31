@@ -1,4 +1,5 @@
 #include <vulkan/vulkan.h>
+#include <string>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
@@ -16,7 +17,7 @@ namespace {
         if (width == 0 || height == 0) return;
 
         vkDeviceWaitIdle(device->GetVkDevice());
-        swapChain->Recreate();
+        swapChain->Recreate(width, height);
         renderer->RecreateFrameResources();
     }
 
@@ -143,7 +144,25 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    double fps = 0.0;
+    double lastTime = 0.0f;
+    int frames = 0;
+    std::string windowTitle;
+
     while (!ShouldQuit()) {
+        frames++;
+        double curTime = glfwGetTime();
+
+        if (curTime - lastTime >= 1.0)  // elapsed time >= 1 sec
+        {
+            fps = static_cast<double>(frames) / (curTime - lastTime);
+            lastTime = curTime;
+            frames = 0;
+        }
+
+        windowTitle = ("Vulkan Grassifier | FPS: ") + std::to_string(fps);
+        glfwSetWindowTitle(GetGLFWWindow(), windowTitle.c_str());
+
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
