@@ -31,10 +31,10 @@ It uses compute shaders to perform physics calculations on Bezier curves that re
 Test view 1 is chosen so that both orientation culling and view-frustum culling are working to cull some of the blades.
 |  Test View 1 | Result |
 |---|---|
-|![](img/test1.gif)|![](img/graph1.png)|
+|![](img/test1.png)|![](img/graph1.png)|
 <br/>
 
 Test view 2 is chosen so that both distance culling is working to cull some of the blades.
 |  Test View 2 | Result |
 |---|---|
-|![](img/test2.gif)|![](img/graph2.png)|
+|![](img/test2.png)|![](img/graph2.png)|
