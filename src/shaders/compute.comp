@@ -36,8 +36,8 @@ layout(set = 2, binding = 2) buffer NumBlades {
     uint firstInstance; // = 0
 } numBlades;
 
-#define ORIENTATION_CULLING     1
-#define FRUSTUM_CULLING         1
+#define ORIENTATION_CULLING     0
+#define FRUSTUM_CULLING         0
 #define DISTANCE_CULLING        1
 
 //constants used for the shader
@@ -109,12 +109,12 @@ void main() {
     inBlades[gl_GlobalInvocationID.x].v1.xyz = v1;
     inBlades[gl_GlobalInvocationID.x].v2.xyz = v2;
 
-vec3 cameraLoc = -camera.view[3].xyz;
+    vec3 cameraLoc = -camera.view[3].xyz;
 
 #if ORIENTATION_CULLING
     //Orientation Culling
     vec3 cameraForward = normalize(vec3(camera.view[0].z, camera.view[1].z, camera.view[2].z));    
-    cameraForward = normalize(v0 - cameraLoc);
+    //cameraForward = normalize(v0 - cameraLoc);
     if(abs(dot(orient, cameraForward)) > 0.9) {
         return;
     }

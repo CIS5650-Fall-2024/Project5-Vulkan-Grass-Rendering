@@ -14,4 +14,5 @@ void main() {
     vec4 minGreen = vec4(0.f, 0.15f, 0.01f, 0.f);
     vec4 maxGreen = vec4(0.05f, 0.9f, 0.01f, 0.f);
     outColor = mix(minGreen, maxGreen, abs(dot(n, normalize(light))));
+    //outColor = vec4(0,1,0,0);
 }
