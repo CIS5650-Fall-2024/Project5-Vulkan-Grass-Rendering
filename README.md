@@ -29,6 +29,7 @@ It uses compute shaders to perform physics calculations on Bezier curves that re
   ![](img/graph3.png)
   
 * The improvement got by culling using each of the three culling tests
+
 Test view 1 is chosen so that both orientation culling and view-frustum culling are working to cull some of the blades.
 |  Test View 1 | Result |
 |---|---|
