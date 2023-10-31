@@ -20,6 +20,9 @@ private:
     VkBuffer timeBuffer;
     VkDeviceMemory timeBufferMemory;
     Time time;
+    float fps_arr[100] = { 0 };
+    int fps_arr_idx = 0;
+    float fps_sum = 0;
     
     void* mappedData;
 
