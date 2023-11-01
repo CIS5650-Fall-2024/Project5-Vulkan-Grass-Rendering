@@ -6,6 +6,10 @@
 #include "Camera.h"
 #include "Image.h"
 
+#include <iostream>
+#include <chrono>
+#include <ctime> 
+
 static constexpr unsigned int WORKGROUP_SIZE = 32;
 
 Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* camera)
@@ -14,6 +18,9 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     swapChain(swapChain),
     scene(scene),
     camera(camera) {
+    //reference https://stackoverflow.com/questions/997946/how-to-get-current-time-and-date-in-c
+    auto start = std::chrono::system_clock::now();
+    
 
     CreateCommandPools();
     CreateRenderPass();
@@ -33,6 +40,15 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     CreateComputePipeline();
     RecordCommandBuffers();
     RecordComputeCommandBuffer();
+
+    auto end = std::chrono::system_clock::now();
+
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+
+    std::cout << "finished computation at " << std::ctime(&end_time)
+        << "elapsed time: " << elapsed_seconds.count()*1000 << "ms"
+        << std::endl;
 }
 
 void Renderer::CreateCommandPools() {
