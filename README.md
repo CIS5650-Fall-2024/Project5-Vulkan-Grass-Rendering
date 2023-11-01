@@ -7,7 +7,7 @@ Vulkan Grass Rendering
 
 * Tested on: Windows 11, 11th Gen Intel(R) Core(TM) i9-11900H @ 2.50GHz  22GB, GTX 3070 Laptop GPU
 
-![Unlock FPS](image/hw5.gif)
+![Unlock FPS](img/hw5.gif)
 
 
 ## Summery
@@ -16,7 +16,7 @@ Vulkan Grass Rendering
 
 
 
-![Unlock FPS](image/hw5_2.gif)
+![Unlock FPS](img/hw5_2.gif)
 
 ## Analysis
 
