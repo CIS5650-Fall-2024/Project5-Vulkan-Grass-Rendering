@@ -3,10 +3,27 @@ Vulkan Grass Rendering
 
 **University of Pennsylvania, CIS 565: GPU Programming and Architecture, Project 5**
 
-* (TODO) YOUR NAME HERE
-* Tested on: (TODO) Windows 22, i7-2222 @ 2.22GHz 22GB, GTX 222 222MB (Moore 2222 Lab)
+* Han Wang
 
-### (TODO: Your README)
+* Tested on: Windows 11, 11th Gen Intel(R) Core(TM) i9-11900H @ 2.50GHz  22GB, GTX 3070 Laptop GPU
 
-*DO NOT* leave the README to the last minute! It is a crucial part of the
-project, and we will not be able to grade you without a good README.
+![Unlock FPS](image/hw5.gif)
+
+
+## Summery
+
+
+
+
+
+![Unlock FPS](image/hw5_2.gif)
+
+## Analysis
+
+Based on the output I got, I tested the different numbers of blades and their run time on the rendering part and got the following graph:
+
+![Unlock FPS](image/runtime.png)
+
+Also, since I've implemented all three different culling methods, I tried to implemented them separately and get the following graph:
+
+![Unlock FPS](image/culling.png)
