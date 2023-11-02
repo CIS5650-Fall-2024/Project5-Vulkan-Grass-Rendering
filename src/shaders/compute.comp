@@ -3,8 +3,8 @@
 
 #define WORKGROUP_SIZE 32
 
-#define WIND 6
-#define GRAVITY 2
+#define WIND 8.75
+#define GRAVITY 3.25
 #define RECOVERY 1
 #define ORIENT_CULL 1
 #define DIST_CULL 7
@@ -123,19 +123,20 @@ void main() {
   float l_proj = length(v2 - v0 - up * dot((v2 - v0), up));
   v1 = v0 + height * up * max((1 - l_proj / height), 0.05 * max(l_proj / height, 1));
 
-  float l_0 = length(v2 - v0);
-  float l_1 = length(v1 - v2) + length(v1 - v0);
-  float bezier_length = (2 * l_0 + l_1) / 3;
+  float l_0 = distance(v2, v0);
+  float l_1 = distance(v2, v1) + distance(v1, v0);
+  float bezier_length = (2.f * l_0 + l_1) / 3.f;
 
   float ratio = height / bezier_length;
+  vec3 temp_v1 = v1;
   v1 = v0 + ratio * (v1 - v0);
-  v2 = v1 + ratio * (v2 - v1);
+  v2 = v1 + ratio * (v2 - temp_v1);
 
   blade.v0 = vec4(v0, orient);
   blade.v1 = vec4(v1, height);
   blade.v2 = vec4(v2, width);
 	blade.up = vec4(up, stiff);
-  
+//  
   blades[index] = blade;
 //  out_blades[index] = blade;
 
@@ -145,22 +146,27 @@ void main() {
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+#ifdef ORIENT_CULL
   vec3 cam = inverse(camera.view)[3].xyz;
-  if (abs(dot(normalize(cam - v0), vec3(cos(orient), 0, sin(orient)))) > 0.9) {
+  if (abs(dot(normalize(cam - v0), vec3(cos(orient), 0, sin(orient)))) > 0.8) {
 		return;
 	}
+#endif
 
+#ifdef DIST_CULL
   float d_proj = length(v0 - cam - up * (dot((v0 - cam), up)));
   if (mod(index, DIST_CULL) >= (DIST_CULL * (1 - d_proj / DIST_CULL_MAX))) { // could be >= instead
 		return;
 	}
+#endif
 
+#ifdef VIEW_CULL
   vec3 midpoint = 0.25 * v0 + 0.5 * v1 + 0.25 * v2;
   if (!(is_in_frustum(v0) && is_in_frustum(v2) && is_in_frustum(midpoint))) 
   {
     return;
   }
-
+#endif
 
   uint culled_index = atomicAdd(numBlades.vertexCount, 1);
   out_blades[culled_index] = blade;

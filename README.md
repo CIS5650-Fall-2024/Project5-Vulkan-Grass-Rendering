@@ -3,10 +3,22 @@ Vulkan Grass Rendering
 
 **University of Pennsylvania, CIS 565: GPU Programming and Architecture, Project 5**
 
-* (TODO) YOUR NAME HERE
-* Tested on: (TODO) Windows 22, i7-2222 @ 2.22GHz 22GB, GTX 222 222MB (Moore 2222 Lab)
+Jason Li   ([LinkedIn](https://linkedin.com/in/jeylii))
+* Tested on: Windows 10, Ryzen 5 3600X @ 3.80GHz 32 GB, NVIDIA RTX 4070 
 
-### (TODO: Your README)
+# **Summary**
+This project is a GPU Grass Simulator implemented using C++ and the Vulkan API. It simulates each grass blade based on a physical model defined in [Responseive Real-Time Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf). The simulation includes force simulation, grass blade culling, and different shaders including a tesselation shader.
 
-*DO NOT* leave the README to the last minute! It is a crucial part of the
-project, and we will not be able to grade you without a good README.
+Example Scene             |  
+:-------------------------:|
+![Example Scene](img/.png)  |
+
+## **Force Simulation**
+
+## **Grass Blade Culling**
+
+## **Performance Analysis**
+
+### Perforamnce vs. Number of Blades
+
+### Performance vs. Usage of Culling
