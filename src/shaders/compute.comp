@@ -150,16 +150,17 @@ void main() {
 		return;
 	}
 
+  float d_proj = length(v0 - cam - up * (dot((v0 - cam), up)));
+  if (mod(index, DIST_CULL) >= (DIST_CULL * (1 - d_proj / DIST_CULL_MAX))) { // could be >= instead
+		return;
+	}
+
   vec3 midpoint = 0.25 * v0 + 0.5 * v1 + 0.25 * v2;
   if (!(is_in_frustum(v0) && is_in_frustum(v2) && is_in_frustum(midpoint))) 
   {
     return;
   }
 
-  float d_proj = length(v0 - cam - up * (dot((v0 - cam), up)));
-  if (mod(index, DIST_CULL) >= (DIST_CULL * (1 - d_proj / DIST_CULL_MAX))) { // could be >= instead
-		return;
-	}
 
   uint culled_index = atomicAdd(numBlades.vertexCount, 1);
   out_blades[culled_index] = blade;
