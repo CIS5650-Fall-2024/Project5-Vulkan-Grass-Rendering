@@ -3,7 +3,7 @@
 
 #define WORKGROUP_SIZE 32
 
-#define WIND 7.5
+#define WIND 6
 #define GRAVITY 2
 #define RECOVERY 1
 #define ORIENT_CULL 1
