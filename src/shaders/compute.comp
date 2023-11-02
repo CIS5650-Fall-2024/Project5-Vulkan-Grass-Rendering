@@ -2,6 +2,16 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define WORKGROUP_SIZE 32
+
+#define WIND 7.5
+#define GRAVITY 2
+#define RECOVERY 1
+#define ORIENT_CULL 1
+#define DIST_CULL 7
+#define DIST_CULL_MAX 25
+#define VIEW_CULL 1
+#define VIEW_CULL_TOLERANCE 0.15
+
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
@@ -35,17 +45,99 @@ struct Blade {
 // 	  uint firstVertex;   // = 0
 // 	  uint firstInstance; // = 0
 // } numBlades;
+layout(set = 2, binding = 0) buffer Blades {
+    Blade blades[];
+};
+
+layout(set = 2, binding = 1) buffer CulledBlades {
+    Blade out_blades[];
+};
+
+layout(set = 2, binding = 2) buffer NumBlades {
+	  uint vertexCount; // num blades remaining
+    uint instanceCount; // = 1
+    uint firstVertex; // = 0
+    uint firstInstance; // = 0
+} numBlades;
+
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+bool is_in_frustum(vec3 point)
+{
+  vec4 point_prime = camera.proj * camera.view * vec4(point, 1);
+  float h = point_prime.w + VIEW_CULL_TOLERANCE;
+  return (inBounds(point_prime.x, h) && inBounds(point_prime.y, h) && inBounds(point_prime.z, h));
+}
+
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
+
+  uint index = gl_GlobalInvocationID.x;
+  Blade blade = blades[index];
+
+  vec3 v0 = blade.v0.xyz;
+  vec3 v1 = blade.v1.xyz;
+  vec3 v2 = blade.v2.xyz;
+  vec3 up = blade.up.xyz;
+
+  float orient = blade.v0.w;
+  float height = blade.v1.w;
+  float width = blade.v2.w;
+  float stiff = blade.up.w;
+
+#ifdef GRAVITY
+  vec3 grav_env = -1 * normalize(up) * GRAVITY;
+
+  vec3 front = normalize(cross(vec3(cos(orient), 0, sin(orient)), up));
+  vec3 grav_front = 0.25 * length(grav_env) * normalize(front);
+    
+  vec3 gravity = grav_env + grav_front;
+#endif
+  
+#ifdef RECOVERY
+  vec3 recovery = ((v0 + up * height) - v2) * stiff;
+#endif
+
+#ifdef WIND
+	vec3 wind_function = vec3(1.5, 2.0, 1.0) * sin(0.5 * totalTime) * sin(0.5 * totalTime) * cos(0.5 * totalTime) * WIND;
+  float wind_dir = 1 - (abs(dot(normalize(wind_function), normalize(v2 - v0))));
+  float wind_height_ratio = dot(v2 - v0, up) / height;
+    
+  vec3 wind = wind_function * wind_dir * wind_height_ratio;
+#endif
+
+  vec3 total_force = (recovery + gravity + wind) * deltaTime;
+  
+  // update v2
+  v2 += total_force;
+  v2 -= (up * min(dot(up, v2 - v0), 0));
+
+  // update v1
+  float l_proj = length(v2 - v0 - up * dot((v2 - v0), up));
+  v1 = v0 + height * up * max((1 - l_proj / height), 0.05 * max(l_proj / height, 1));
+
+  float l_0 = length(v2 - v0);
+  float l_1 = length(v1 - v2) + length(v1 - v0);
+  float bezier_length = (2 * l_0 + l_1) / 3;
+
+  float ratio = height / bezier_length;
+  v1 = v0 + ratio * (v1 - v0);
+  v2 = v1 + ratio * (v2 - v1);
+
+  blade.v0 = vec4(v0, orient);
+  blade.v1 = vec4(v1, height);
+  blade.v2 = vec4(v2, width);
+	blade.up = vec4(up, stiff);
+  
+  blades[index] = blade;
+//  out_blades[index] = blade;
 
     // TODO: Apply forces on every blade and update the vertices in the buffer
 
@@ -53,4 +145,23 @@ void main() {
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+  vec3 cam = inverse(camera.view)[3].xyz;
+  if (abs(dot(normalize(cam - v0), vec3(cos(orient), 0, sin(orient)))) > 0.9) {
+		return;
+	}
+
+  vec3 midpoint = 0.25 * v0 + 0.5 * v1 + 0.25 * v2;
+  if (!(is_in_frustum(v0) && is_in_frustum(v2) && is_in_frustum(midpoint))) 
+  {
+    return;
+  }
+
+  float d_proj = length(v0 - cam - up * (dot((v0 - cam), up)));
+  if (mod(index, DIST_CULL) >= (DIST_CULL * (1 - d_proj / DIST_CULL_MAX))) { // could be >= instead
+		return;
+	}
+
+  uint culled_index = atomicAdd(numBlades.vertexCount, 1);
+  out_blades[culled_index] = blade;
+
 }
