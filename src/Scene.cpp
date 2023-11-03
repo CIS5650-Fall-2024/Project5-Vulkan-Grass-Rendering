@@ -34,6 +34,10 @@ void Scene::UpdateTime() {
     memcpy(mappedData, &time, sizeof(Time));
 }
 
+float Scene::get_time() {
+		return time.totalTime;
+}
+
 VkBuffer Scene::GetTimeBuffer() const {
     return timeBuffer;
 }
