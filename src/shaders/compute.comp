@@ -136,26 +136,19 @@ void main() {
   blade.v1 = vec4(v1, height);
   blade.v2 = vec4(v2, width);
 	blade.up = vec4(up, stiff);
-//  
   blades[index] = blade;
-//  out_blades[index] = blade;
-
-    // TODO: Apply forces on every blade and update the vertices in the buffer
-
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
-	// to the culled blades buffer
-	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
-	// You want to write the visible blades to the buffer without write conflicts between threads
-#ifdef ORIENT_CULL
+  
   vec3 cam = inverse(camera.view)[3].xyz;
-  if (abs(dot(normalize(cam - v0), vec3(cos(orient), 0, sin(orient)))) > 0.8) {
+
+#ifdef ORIENT_CULL
+  if (abs(dot(normalize(cam - v0), vec3(cos(orient), 0, sin(orient)))) > 0.75) {
 		return;
 	}
 #endif
 
 #ifdef DIST_CULL
   float d_proj = length(v0 - cam - up * (dot((v0 - cam), up)));
-  if (mod(index, DIST_CULL) >= (DIST_CULL * (1 - d_proj / DIST_CULL_MAX))) { // could be >= instead
+  if (mod(index, DIST_CULL) >= (DIST_CULL * (1 - d_proj / DIST_CULL_MAX))) { 
 		return;
 	}
 #endif

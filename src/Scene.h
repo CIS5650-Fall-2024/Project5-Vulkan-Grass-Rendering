@@ -42,4 +42,6 @@ public:
     VkBuffer GetTimeBuffer() const;
 
     void UpdateTime();
+    float get_time();
+
 };
