@@ -2,7 +2,9 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define frustumCullTolerance 0.05
-
+#define ORIENTATION_CULLING 1
+#define FRUSTUM_CULLING 1
+#define DISTANCE_CULLING 1
 #define WORKGROUP_SIZE 32
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -54,7 +56,7 @@ bool frustumTest(vec3 p) {
     vec4 vpp = camera.proj * camera.view * vec4(p, 1.0);
     float h = vpp.w + frustumCullTolerance;
 
-    return inBounds(vpp.x, h) && inBounds(vpp.y, h);
+    return inBounds(vpp.x, h) && inBounds(vpp.y, h) && inBounds(vpp.z, h);
 }
 
 void main() {
@@ -121,17 +123,38 @@ void main() {
 	// to the culled blades buffer
 
 	vec3 camPos = inverse(camera.view)[3].xyz;
-	if (dot(tangent, normalize(v0 - camPos)) > 0.9) {
-		return;
+#if ORIENTATION_CULLING
+
+	
+
+	vec3 direction2eye = normalize(v0 - camPos - up * dot(v0 - camPos, up));
+	vec3 vhead1 = vec3(0.0, 0.0, -1.0);
+
+	// apply Rodrigues' Rotation Formula
+    vhead1 = normalize(cos(orientation) * vhead1 + sin(orientation) * cross(up, vhead1) + (1.0 - cos(orientation)) * dot(up, vhead1) * up );
+
+	if (abs(dot(direction2eye, vhead1)) > 0.95) {
+        return;
 	}
 
+	/*
+	if (abs(dot(tangent, normalize(v0 - camPos))) > 0.9) {
+		return;
+	}
+	*/
+#endif
+
 	// View-frustum culling
+#if FRUSTUM_CULLING
 	vec3 m = 0.25 * v0 + 0.5 * v1 + 0.25 * v2;
 	if (!frustumTest(m) && !frustumTest(v0) && !frustumTest(v2)) {
 		return;
 	}
+#endif
+	
 
 	// Distance culling
+#if DISTANCE_CULLING
 	float dproj = length(v0 - camPos - up * dot(v0 - camPos, up));
 	int level = 10;
 	float dmax = 20.0;
@@ -139,6 +162,8 @@ void main() {
 	{
 		return;
 	}
+#endif
+	
 
 
 

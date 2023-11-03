@@ -1,10 +1,12 @@
 #include <vulkan/vulkan.h>
+#include <sstream>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
 #include "Camera.h"
 #include "Scene.h"
 #include "Image.h"
+
 
 Device* device;
 SwapChain* swapChain;
@@ -59,6 +61,7 @@ namespace {
             double deltaZ = static_cast<float>((previousY - yPosition) * 0.05);
 
             camera->UpdateOrbit(0.0f, 0.0f, deltaZ);
+
 
             previousY = yPosition;
         }
@@ -142,11 +145,36 @@ int main() {
     glfwSetWindowSizeCallback(GetGLFWWindow(), resizeCallback);
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
+    GLFWwindow* window = GetGLFWWindow();
+
+    double lastTime = glfwGetTime();
+    int nbFrames = 0;
 
     while (!ShouldQuit()) {
         glfwPollEvents();
+
+        double currentTime = glfwGetTime();
+        double fps = 0.0;
+        
+        if (currentTime - lastTime >= 1.0) { 
+
+            fps = double(nbFrames) / (currentTime - lastTime);
+            //printf("%f fps\n", fps);
+            // Reset frame count and lastTime
+            nbFrames = 0;
+            lastTime = currentTime;
+
+            // Set the title of the window to include FPS information
+            std::ostringstream title;
+            title << "FPS: ";
+            title.precision(2);
+            title << std::fixed << fps;
+            glfwSetWindowTitle(window, title.str().c_str());
+        }
+
         scene->UpdateTime();
         renderer->Frame();
+        nbFrames++;
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());
