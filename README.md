@@ -57,7 +57,7 @@ Our TCS `grass.tesc` takes an input patch of blade's 3 control points, and emits
 
 *Figure 5. Tessellation Level Diagram for Quads*
 
-Next, in TES `grass.tese` we can decide the actual clip space vertex positions using De Casteljau's algorithm. The table below shows the process of remapping the tessellated vertices within a quad to shape it like a gradd blade.
+Next, in TES `grass.tese` we can decide the actual clip space vertex positions using De Casteljau's algorithm. The table below shows the process of remapping the tessellated vertices within a quad to shape it like a grass blade.
 
  Original quad patch | Remapped patch |
 |---|---
