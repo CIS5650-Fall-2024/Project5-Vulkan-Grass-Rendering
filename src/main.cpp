@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "Image.h"
+#include <sstream>
 
 Device* device;
 SwapChain* swapChain;
@@ -16,7 +17,7 @@ namespace {
         if (width == 0 || height == 0) return;
 
         vkDeviceWaitIdle(device->GetVkDevice());
-        swapChain->Recreate();
+        swapChain->Recreate(width, height);
         renderer->RecreateFrameResources();
     }
 
@@ -139,14 +140,36 @@ int main() {
 
     renderer = new Renderer(device, swapChain, scene, camera);
 
+    GLFWwindow* window = GetGLFWWindow();
     glfwSetWindowSizeCallback(GetGLFWWindow(), resizeCallback);
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    double fps = 0;
+    double timebase = 0;
+    int frame = 0;
+
     while (!ShouldQuit()) {
         glfwPollEvents();
+
+        // calculate fps for performance analysis
+        frame++;
+        double time = glfwGetTime();
+        if (time - timebase > 1.0) {
+            fps = frame / (time - timebase);
+            timebase = time;
+            frame = 0;
+        }
+
         scene->UpdateTime();
         renderer->Frame();
+
+        std::ostringstream ss;
+        ss << "[";
+        ss.precision(1);
+        ss << std::fixed << fps;
+        ss << " fps] " << applicationName;
+        glfwSetWindowTitle(window, ss.str().c_str());
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());

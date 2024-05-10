@@ -149,13 +149,13 @@ Although we need to simulate forces on every grass blade at every frame, there a
 
 #### Orientation culling
 
-Consider the scenario in which the front face direction of the grass blade is perpendicular to the view vector. Since our grass blades won't have width, we will end up trying to render parts of the grass that are actually smaller than the size of a pixel. This could lead to aliasing artifacts.
+Consider the scenario in which the front face direction of the grass blade is perpendicular to the view vector. Since our grass blades have no thickness, we will end up trying to render parts of the grass that are actually smaller than the size of a pixel. This could lead to aliasing artifacts.
 
 In order to remedy this, we can cull these blades! Simply do a dot product test to see if the view vector and front face direction of the blade are perpendicular. The paper uses a threshold value of `0.9` to cull, but feel free to use what you think looks best.
 
 #### View-frustum culling
 
-We also want to cull blades that are outside of the view-frustum, considering they won't show up in the frame anyway. To determine if a grass blade is in the view-frustum, we want to compare the visibility of three points: `v0, v2, and m`, where `m = (1/4)v0 * (1/2)v1 * (1/4)v2`.
+We also want to cull blades that are outside of the camera's view-frustum, considering they won't show up in the frame anyway. To determine if a grass blade is inside the view-frustum, we want to compare the visibility of three points: `v0, v2, and m`, where `m = (1/4)v0 * (1/2)v1 * (1/4)v2`.
 
 Notice that we aren't using `v1` for the visibility test. This is because the `v1` is a Bezier guide that doesn't represent a position on the grass blade. We instead use `m` to approximate the midpoint of our Bezier curve.
 
