@@ -5,7 +5,7 @@ Vulkan Grass Rendering
 
 * Xiaoxiao Zou
   * [LinkedIn](https://www.linkedin.com/in/xiaoxiao-zou-23482a1b9/)
-* Tested on: Windows 11, AMD Ryzen 9 7940HS @ 4.00 GHz, RTX 4060 Laptop 
+* Tested on: Windows 11, AMD Ryzen 9 7940HS @ 4.00 GHz, Nvidia RTX 4060 Laptop 
 
 
 ### Result & Features
